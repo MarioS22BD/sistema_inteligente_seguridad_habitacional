@@ -27,12 +27,27 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'email', 'password'])]
+#[Fillable(['name', 'email', 'password', 'rol'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
+
+    public function esAdmin(): bool
+    {
+        return $this->rol === 'administrador';
+    }
+
+    public function esEmpleado(): bool
+    {
+        return $this->rol === 'empleado';
+    }
+
+    public function esUsuario(): bool
+    {
+        return $this->rol === 'usuario';
+    }
 
     /**
      * Get the attributes that should be cast.
