@@ -30,26 +30,45 @@ defineProps<{
 <template>
     <Head title="Inicio de sesión" />
 
-    <div class="flex min-h-screen items-center justify-center bg-slate-950 p-4 text-slate-100">
-        <div class="w-full max-w-5xl overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-2xl shadow-slate-950/60">
+    <div
+        class="flex min-h-screen items-center justify-center bg-slate-950 p-4 text-slate-100"
+    >
+        <div
+            class="w-full max-w-5xl overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-2xl shadow-slate-950/60"
+        >
             <div class="grid lg:grid-cols-2">
-                <div class="flex flex-col justify-center bg-slate-950 px-8 py-10 lg:px-12">
+                <div
+                    class="flex flex-col justify-center bg-slate-950 px-8 py-10 lg:px-12"
+                >
                     <div class="mb-8 flex items-center gap-3">
-                        <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-600/15 ring-1 ring-blue-500/50">
+                        <div
+                            class="flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-600/15 ring-1 ring-blue-500/50"
+                        >
                             <ShieldCheck class="h-9 w-9 text-blue-400" />
                         </div>
                         <div>
-                            <div class="text-2xl font-semibold text-white">Sistema de seguridad</div>
-                            <div class="text-sm text-slate-400">Monitoreo en tiempo real</div>
+                            <div class="text-2xl font-semibold text-white">
+                                Sistema de seguridad
+                            </div>
+                            <div class="text-sm text-slate-400">
+                                Monitoreo en tiempo real
+                            </div>
                         </div>
                     </div>
 
                     <div class="mb-8 text-center">
-                        <h1 class="text-3xl font-semibold text-white">Inicio de sesión</h1>
-                        <p class="mt-2 text-sm text-slate-400">Ingresa tus credenciales para acceder al sistema.</p>
+                        <h1 class="text-3xl font-semibold text-white">
+                            Inicio de sesión
+                        </h1>
+                        <p class="mt-2 text-sm text-slate-400">
+                            Ingresa tus credenciales para acceder al sistema.
+                        </p>
                     </div>
 
-                    <div v-if="status" class="mb-4 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-center text-sm font-medium text-emerald-300">
+                    <div
+                        v-if="status"
+                        class="mb-4 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-center text-sm font-medium text-emerald-300"
+                    >
                         {{ status }}
                     </div>
 
@@ -62,7 +81,10 @@ defineProps<{
                         class="space-y-5"
                     >
                         <div class="space-y-2">
-                            <Label for="email" class="flex items-center gap-2 text-sm text-slate-200">
+                            <Label
+                                for="email"
+                                class="flex items-center gap-2 text-sm text-slate-200"
+                            >
                                 <UserRound class="h-4 w-4 text-blue-400" />
                                 Usuario
                             </Label>
@@ -82,8 +104,13 @@ defineProps<{
 
                         <div class="space-y-2">
                             <div class="flex items-center justify-between">
-                                <Label for="password" class="flex items-center gap-2 text-sm text-slate-200">
-                                    <LockKeyhole class="h-4 w-4 text-blue-400" />
+                                <Label
+                                    for="password"
+                                    class="flex items-center gap-2 text-sm text-slate-200"
+                                >
+                                    <LockKeyhole
+                                        class="h-4 w-4 text-blue-400"
+                                    />
                                     Contraseña
                                 </Label>
                                 <TextLink
@@ -108,8 +135,16 @@ defineProps<{
                         </div>
 
                         <div class="flex items-center justify-between pt-2">
-                            <Label for="remember" class="flex items-center gap-3 text-sm text-slate-300">
-                                <Checkbox id="remember" name="remember" :tabindex="3" class="border-slate-600 data-[state=checked]:bg-blue-600" />
+                            <Label
+                                for="remember"
+                                class="flex items-center gap-3 text-sm text-slate-300"
+                            >
+                                <Checkbox
+                                    id="remember"
+                                    name="remember"
+                                    :tabindex="3"
+                                    class="border-slate-600 data-[state=checked]:bg-blue-600"
+                                />
                                 <span>Recordarme</span>
                             </Label>
                         </div>
@@ -127,34 +162,84 @@ defineProps<{
                     </Form>
                 </div>
 
-                <div class="flex items-center justify-center bg-slate-800/70 p-8">
-                    <div class="w-full max-w-md rounded-2xl border border-slate-700 bg-slate-900/80 p-6 shadow-inner shadow-slate-950/50">
+                <div
+                    class="flex items-center justify-center bg-slate-800/70 p-8"
+                >
+                    <div
+                        class="w-full max-w-md rounded-2xl border border-slate-700 bg-slate-900/80 p-6 shadow-inner shadow-slate-950/50"
+                    >
                         <div class="mb-6 flex items-center gap-3">
-                            <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600/15 text-blue-400 ring-1 ring-blue-500/40">
+                            <div
+                                class="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600/15 text-blue-400 ring-1 ring-blue-500/40"
+                            >
                                 <ShieldCheck class="h-6 w-6" />
                             </div>
                             <div>
-                                <div class="text-lg font-semibold text-white">Panel de seguridad</div>
-                                <div class="text-xs text-slate-400">Control central del sistema</div>
+                                <div class="text-lg font-semibold text-white">
+                                    Panel de seguridad
+                                </div>
+                                <div class="text-xs text-slate-400">
+                                    Control central del sistema
+                                </div>
                             </div>
                         </div>
 
                         <div class="grid gap-4 sm:grid-cols-2">
-                            <div class="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4">
-                                <div class="text-xs uppercase tracking-wide text-emerald-300">Sistema</div>
-                                <div class="mt-2 text-2xl font-semibold text-white">Activado</div>
+                            <div
+                                class="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4"
+                            >
+                                <div
+                                    class="text-xs tracking-wide text-emerald-300 uppercase"
+                                >
+                                    Sistema
+                                </div>
+                                <div
+                                    class="mt-2 text-2xl font-semibold text-white"
+                                >
+                                    Activado
+                                </div>
                             </div>
-                            <div class="rounded-xl border border-sky-500/30 bg-sky-500/10 p-4">
-                                <div class="text-xs uppercase tracking-wide text-sky-300">Puerta</div>
-                                <div class="mt-2 text-2xl font-semibold text-white">Cerrada</div>
+                            <div
+                                class="rounded-xl border border-sky-500/30 bg-sky-500/10 p-4"
+                            >
+                                <div
+                                    class="text-xs tracking-wide text-sky-300 uppercase"
+                                >
+                                    Puerta
+                                </div>
+                                <div
+                                    class="mt-2 text-2xl font-semibold text-white"
+                                >
+                                    Cerrada
+                                </div>
                             </div>
-                            <div class="rounded-xl border border-violet-500/30 bg-violet-500/10 p-4">
-                                <div class="text-xs uppercase tracking-wide text-violet-300">Movimiento</div>
-                                <div class="mt-2 text-2xl font-semibold text-white">No detectado</div>
+                            <div
+                                class="rounded-xl border border-violet-500/30 bg-violet-500/10 p-4"
+                            >
+                                <div
+                                    class="text-xs tracking-wide text-violet-300 uppercase"
+                                >
+                                    Movimiento
+                                </div>
+                                <div
+                                    class="mt-2 text-2xl font-semibold text-white"
+                                >
+                                    No detectado
+                                </div>
                             </div>
-                            <div class="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
-                                <div class="text-xs uppercase tracking-wide text-amber-300">Estado</div>
-                                <div class="mt-2 text-2xl font-semibold text-white">Normal</div>
+                            <div
+                                class="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4"
+                            >
+                                <div
+                                    class="text-xs tracking-wide text-amber-300 uppercase"
+                                >
+                                    Estado
+                                </div>
+                                <div
+                                    class="mt-2 text-2xl font-semibold text-white"
+                                >
+                                    Normal
+                                </div>
                             </div>
                         </div>
                     </div>

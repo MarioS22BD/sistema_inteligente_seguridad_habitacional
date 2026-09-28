@@ -51,7 +51,9 @@ const loading = ref(true);
 const error = ref<string | null>(null);
 const estado = ref<EstadoSistemaApi | null>(null);
 const eventos = ref<EventoApi[]>([]);
-const usuario = computed(() => page.props.auth.user as { name?: string; rol?: string });
+const usuario = computed(
+    () => page.props.auth.user as { name?: string; rol?: string },
+);
 
 const formatDate = (value: string | null | undefined) => {
     if (!value) return 'Sin información disponible';
@@ -124,7 +126,8 @@ const estadoChip = computed(() => {
     if (value === 'NORMAL') {
         return {
             label: 'NORMAL',
-            className: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/40',
+            className:
+                'bg-emerald-500/10 text-emerald-600 border-emerald-500/40',
         };
     }
 
@@ -153,7 +156,9 @@ const metricCards = computed(() => [
     },
     {
         title: 'Movimiento',
-        value: estado.value?.movimiento_detectado ? 'DETECTADO' : 'NO DETECTADO',
+        value: estado.value?.movimiento_detectado
+            ? 'DETECTADO'
+            : 'NO DETECTADO',
         icon: Activity,
         tone: estado.value?.movimiento_detectado
             ? 'text-red-600 bg-red-500/10 border-red-500/30'
@@ -174,7 +179,8 @@ const ultimaAlerta = computed(() => {
     const alertEvent =
         eventos.value.find(
             (evento) =>
-                evento.gravedad === 'critico' || evento.gravedad === 'advertencia',
+                evento.gravedad === 'critico' ||
+                evento.gravedad === 'advertencia',
         ) ?? null;
 
     if (!alertEvent) {
@@ -197,9 +203,13 @@ const ultimaAlerta = computed(() => {
     <Head title="Dashboard" />
 
     <div class="space-y-6 p-4 md:p-6">
-        <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div
+            class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between"
+        >
             <div>
-                <p class="text-sm font-medium uppercase tracking-[0.2em] text-blue-600">
+                <p
+                    class="text-sm font-medium tracking-[0.2em] text-blue-600 uppercase"
+                >
                     Sistema
                 </p>
                 <h1 class="text-3xl font-semibold text-slate-900">
@@ -207,13 +217,20 @@ const ultimaAlerta = computed(() => {
                 </h1>
             </div>
             <div class="flex items-center gap-2 text-sm text-slate-500">
-                <Badge variant="outline" class="border-slate-200 bg-white text-slate-700">
-                    {{ usuario.name ?? 'Usuario' }} · {{ usuario.rol ?? 'Sin rol' }}
+                <Badge
+                    variant="outline"
+                    class="border-slate-200 bg-white text-slate-700"
+                >
+                    {{ usuario.name ?? 'Usuario' }} ·
+                    {{ usuario.rol ?? 'Sin rol' }}
                 </Badge>
             </div>
         </div>
 
-        <div v-if="error" class="rounded-2xl border border-red-200 bg-red-50 p-4 text-red-700">
+        <div
+            v-if="error"
+            class="rounded-2xl border border-red-200 bg-red-50 p-4 text-red-700"
+        >
             {{ error }}
         </div>
 
@@ -251,7 +268,9 @@ const ultimaAlerta = computed(() => {
         </div>
 
         <div class="grid gap-6 xl:grid-cols-[1.6fr_0.9fr]">
-            <Card class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <Card
+                class="rounded-2xl border border-slate-200 bg-white shadow-sm"
+            >
                 <CardHeader class="pb-3">
                     <div class="flex items-center gap-2">
                         <BellRing class="h-5 w-5 text-red-500" />
@@ -268,7 +287,11 @@ const ultimaAlerta = computed(() => {
                                 variant="outline"
                                 class="border-red-200 bg-red-100 text-red-700"
                             >
-                                {{ ultimaAlerta.title.includes('PUERTA') ? 'Advertencia' : 'Alerta' }}
+                                {{
+                                    ultimaAlerta.title.includes('PUERTA')
+                                        ? 'Advertencia'
+                                        : 'Alerta'
+                                }}
                             </Badge>
                         </div>
                         <p class="mt-2 text-sm text-red-700">
@@ -281,7 +304,9 @@ const ultimaAlerta = computed(() => {
                 </CardContent>
             </Card>
 
-            <Card class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <Card
+                class="rounded-2xl border border-slate-200 bg-white shadow-sm"
+            >
                 <CardHeader class="pb-3">
                     <div class="flex items-center gap-2">
                         <Sparkles class="h-5 w-5 text-blue-500" />
@@ -289,27 +314,41 @@ const ultimaAlerta = computed(() => {
                     </div>
                 </CardHeader>
                 <CardContent class="space-y-3">
-                    <div class="grid grid-cols-3 gap-3 text-center text-sm text-slate-600">
-                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                    <div
+                        class="grid grid-cols-3 gap-3 text-center text-sm text-slate-600"
+                    >
+                        <div
+                            class="rounded-xl border border-slate-200 bg-slate-50 p-3"
+                        >
                             <div class="text-xs text-slate-500">Sistema</div>
                             <div class="mt-2 font-semibold text-slate-900">
                                 {{ estado?.esta_activado ? 'On' : 'Off' }}
                             </div>
                         </div>
-                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                        <div
+                            class="rounded-xl border border-slate-200 bg-slate-50 p-3"
+                        >
                             <div class="text-xs text-slate-500">Puerta</div>
                             <div class="mt-2 font-semibold text-slate-900">
-                                {{ estado?.puerta_abierta ? 'Abierta' : 'Cerrada' }}
+                                {{
+                                    estado?.puerta_abierta
+                                        ? 'Abierta'
+                                        : 'Cerrada'
+                                }}
                             </div>
                         </div>
-                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                        <div
+                            class="rounded-xl border border-slate-200 bg-slate-50 p-3"
+                        >
                             <div class="text-xs text-slate-500">Movimiento</div>
                             <div class="mt-2 font-semibold text-slate-900">
                                 {{ estado?.movimiento_detectado ? 'Sí' : 'No' }}
                             </div>
                         </div>
                     </div>
-                    <div class="mt-5 flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-3">
+                    <div
+                        class="mt-5 flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-3"
+                    >
                         <span class="text-sm text-slate-600">
                             Estado del sistema
                         </span>

@@ -83,14 +83,21 @@ onMounted(async () => {
     <div class="space-y-6 p-4 md:p-6">
         <div class="flex items-center justify-between gap-3">
             <div>
-                <p class="text-sm font-medium uppercase tracking-[0.2em] text-blue-600">
+                <p
+                    class="text-sm font-medium tracking-[0.2em] text-blue-600 uppercase"
+                >
                     Alertas
                 </p>
-                <h1 class="text-3xl font-semibold text-slate-900">Historial de eventos</h1>
+                <h1 class="text-3xl font-semibold text-slate-900">
+                    Historial de eventos
+                </h1>
             </div>
         </div>
 
-        <div v-if="error" class="rounded-2xl border border-red-200 bg-red-50 p-4 text-red-700">
+        <div
+            v-if="error"
+            class="rounded-2xl border border-red-200 bg-red-50 p-4 text-red-700"
+        >
             {{ error }}
         </div>
 
@@ -103,26 +110,52 @@ onMounted(async () => {
             </CardHeader>
             <CardContent>
                 <div v-if="loading" class="space-y-3">
-                    <Skeleton v-for="n in 5" :key="n" class="h-16 w-full rounded-xl" />
+                    <Skeleton
+                        v-for="n in 5"
+                        :key="n"
+                        class="h-16 w-full rounded-xl"
+                    />
                 </div>
-                <div v-else-if="eventos.length === 0" class="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6 text-sm text-slate-500">
+                <div
+                    v-else-if="eventos.length === 0"
+                    class="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6 text-sm text-slate-500"
+                >
                     No hay eventos disponibles para mostrar.
                 </div>
                 <div v-else class="space-y-3">
-                    <div v-for="evento in eventos" :key="evento.id" class="flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 md:flex-row md:items-center md:justify-between">
+                    <div
+                        v-for="evento in eventos"
+                        :key="evento.id"
+                        class="flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 md:flex-row md:items-center md:justify-between"
+                    >
                         <div class="flex items-start gap-3">
-                            <div class="mt-0.5 flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700">
+                            <div
+                                class="mt-0.5 flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700"
+                            >
                                 <AlertTriangle class="h-4 w-4" />
                             </div>
                             <div>
                                 <div class="flex items-center gap-2">
-                                    <span class="font-semibold text-slate-900">{{ evento.tipo_evento }}</span>
-                                    <Badge :class="['border', severityColor(evento.gravedad)]">{{ evento.gravedad }}</Badge>
+                                    <span
+                                        class="font-semibold text-slate-900"
+                                        >{{ evento.tipo_evento }}</span
+                                    >
+                                    <Badge
+                                        :class="[
+                                            'border',
+                                            severityColor(evento.gravedad),
+                                        ]"
+                                        >{{ evento.gravedad }}</Badge
+                                    >
                                 </div>
-                                <p class="mt-1 text-sm text-slate-600">{{ evento.descripcion }}</p>
+                                <p class="mt-1 text-sm text-slate-600">
+                                    {{ evento.descripcion }}
+                                </p>
                             </div>
                         </div>
-                        <div class="flex items-center gap-2 text-xs text-slate-500 md:text-right">
+                        <div
+                            class="flex items-center gap-2 text-xs text-slate-500 md:text-right"
+                        >
                             <Clock3 class="h-3.5 w-3.5" />
                             {{ formatDate(evento.fecha_creacion) }}
                         </div>

@@ -19,7 +19,9 @@ defineOptions({
 
     <div class="space-y-6 p-4 md:p-6">
         <div>
-            <p class="text-sm font-medium uppercase tracking-[0.2em] text-blue-600">
+            <p
+                class="text-sm font-medium tracking-[0.2em] text-blue-600 uppercase"
+            >
                 Configuración
             </p>
             <h1 class="text-3xl font-semibold text-slate-900">
@@ -28,7 +30,9 @@ defineOptions({
         </div>
 
         <div class="grid gap-6 xl:grid-cols-2">
-            <Card class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <Card
+                class="rounded-2xl border border-slate-200 bg-white shadow-sm"
+            >
                 <CardHeader class="pb-3">
                     <div class="flex items-center gap-2">
                         <ShieldCheck class="h-5 w-5 text-blue-500" />
@@ -36,20 +40,28 @@ defineOptions({
                     </div>
                 </CardHeader>
                 <CardContent class="space-y-4">
-                    <div class="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-3">
+                    <div
+                        class="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-3"
+                    >
                         <span class="text-sm text-slate-700">Activado</span>
                         <div class="flex items-center gap-2 text-emerald-600">
                             <ToggleLeft class="h-5 w-5" />
                             <span class="text-sm font-medium">Activo</span>
                         </div>
                     </div>
-                    <div class="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
-                        Actualmente el sistema refleja el estado real proporcionado por el backend. La configuración detallada requiere capacidades adicionales del API.
+                    <div
+                        class="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600"
+                    >
+                        Actualmente el sistema refleja el estado real
+                        proporcionado por el backend. La configuración detallada
+                        requiere capacidades adicionales del API.
                     </div>
                 </CardContent>
             </Card>
 
-            <Card class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <Card
+                class="rounded-2xl border border-slate-200 bg-white shadow-sm"
+            >
                 <CardHeader class="pb-3">
                     <div class="flex items-center gap-2">
                         <Bell class="h-5 w-5 text-amber-500" />
@@ -57,17 +69,28 @@ defineOptions({
                     </div>
                 </CardHeader>
                 <CardContent class="space-y-4">
-                    <div class="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-3">
-                        <span class="text-sm text-slate-700">Alertas activas</span>
-                        <span class="text-sm font-semibold text-slate-900">Habilitadas</span>
+                    <div
+                        class="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-3"
+                    >
+                        <span class="text-sm text-slate-700"
+                            >Alertas activas</span
+                        >
+                        <span class="text-sm font-semibold text-slate-900"
+                            >Habilitadas</span
+                        >
                     </div>
-                    <div class="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
-                        Se muestran notificaciones cuando el backend registra nuevos eventos de seguridad.
+                    <div
+                        class="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600"
+                    >
+                        Se muestran notificaciones cuando el backend registra
+                        nuevos eventos de seguridad.
                     </div>
                 </CardContent>
             </Card>
 
-            <Card class="rounded-2xl border border-slate-200 bg-white shadow-sm xl:col-span-2">
+            <Card
+                class="rounded-2xl border border-slate-200 bg-white shadow-sm xl:col-span-2"
+            >
                 <CardHeader class="pb-3">
                     <div class="flex items-center gap-2">
                         <LockKeyhole class="h-5 w-5 text-violet-500" />
@@ -76,17 +99,35 @@ defineOptions({
                 </CardHeader>
                 <CardContent class="space-y-4">
                     <div class="grid gap-4 md:grid-cols-3">
-                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                        <div
+                            class="rounded-xl border border-slate-200 bg-slate-50 p-4"
+                        >
                             <div class="text-sm text-slate-500">Perfil</div>
-                            <div class="mt-2 text-lg font-semibold text-slate-900">Usuario autenticado</div>
+                            <div
+                                class="mt-2 text-lg font-semibold text-slate-900"
+                            >
+                                Usuario autenticado
+                            </div>
                         </div>
-                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                        <div
+                            class="rounded-xl border border-slate-200 bg-slate-50 p-4"
+                        >
                             <div class="text-sm text-slate-500">Rol</div>
-                            <div class="mt-2 text-lg font-semibold text-slate-900">Según permisos</div>
+                            <div
+                                class="mt-2 text-lg font-semibold text-slate-900"
+                            >
+                                Según permisos
+                            </div>
                         </div>
-                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                        <div
+                            class="rounded-xl border border-slate-200 bg-slate-50 p-4"
+                        >
                             <div class="text-sm text-slate-500">Acceso</div>
-                            <div class="mt-2 text-lg font-semibold text-slate-900">Protegido por Sanctum</div>
+                            <div
+                                class="mt-2 text-lg font-semibold text-slate-900"
+                            >
+                                Protegido por Sanctum
+                            </div>
                         </div>
                     </div>
                 </CardContent>
