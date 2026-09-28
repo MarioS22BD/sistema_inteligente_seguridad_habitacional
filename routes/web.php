@@ -7,6 +7,8 @@ Route::inertia('/', 'Welcome')->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::inertia('dashboard', 'Dashboard')->name('dashboard');
+    Route::inertia('alertas', 'Alertas')->name('alertas');
+    Route::inertia('configuracion', 'Configuracion')->name('configuracion');
 });
 
 require __DIR__.'/settings.php';
