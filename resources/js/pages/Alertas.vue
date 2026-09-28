@@ -13,10 +13,7 @@ import { computed, onMounted, ref } from 'vue';
 import { toast } from 'vue-sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-    Card,
-    CardContent,
-} from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import {
     Dialog,
     DialogClose,
@@ -27,7 +24,13 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { dashboard } from '@/routes';
 
@@ -224,14 +227,23 @@ onMounted(() => void loadEvents());
     <Head title="Alertas" />
 
     <div class="w-full space-y-6 p-4 sm:p-6 xl:p-8">
-        <header class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <header
+            class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"
+        >
             <div>
-                <p class="text-xs font-semibold uppercase text-blue-600">Seguridad</p>
+                <p class="text-xs font-semibold text-blue-600 uppercase">
+                    Seguridad
+                </p>
                 <div class="mt-1 flex flex-wrap items-center gap-3">
-                    <h1 class="text-2xl font-semibold text-slate-900 sm:text-3xl">
+                    <h1
+                        class="text-2xl font-semibold text-slate-900 sm:text-3xl"
+                    >
                         Historial de Eventos de Seguridad
                     </h1>
-                    <Badge variant="outline" class="border-slate-200 bg-white text-slate-700">
+                    <Badge
+                        variant="outline"
+                        class="border-slate-200 bg-white text-slate-700"
+                    >
                         {{ eventos.length }} registros
                     </Badge>
                 </div>
@@ -249,11 +261,17 @@ onMounted(() => void loadEvents());
             {{ error }}
         </div>
 
-        <Card class="w-full rounded-lg border border-slate-200 bg-white shadow-sm">
+        <Card
+            class="w-full rounded-lg border border-slate-200 bg-white shadow-sm"
+        >
             <CardContent class="space-y-5 p-4 sm:p-5">
-                <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div
+                    class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between"
+                >
                     <div class="relative min-w-0 flex-1">
-                        <Search class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                        <Search
+                            class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400"
+                        />
                         <Input
                             v-model="searchTerm"
                             type="search"
@@ -263,15 +281,28 @@ onMounted(() => void loadEvents());
                         />
                     </div>
 
-                    <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+                    <div
+                        class="flex flex-col gap-3 sm:flex-row sm:items-center"
+                    >
                         <Select v-model="selectedSeverity">
-                            <SelectTrigger class="h-10 w-full border-slate-200 bg-white text-slate-700 sm:w-48" aria-label="Filtrar por gravedad">
-                                <SelectValue placeholder="Todas las gravedades" />
+                            <SelectTrigger
+                                class="h-10 w-full border-slate-200 bg-white text-slate-700 sm:w-48"
+                                aria-label="Filtrar por gravedad"
+                            >
+                                <SelectValue
+                                    placeholder="Todas las gravedades"
+                                />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="todos">Todas las gravedades</SelectItem>
-                                <SelectItem value="informativo">Informativo</SelectItem>
-                                <SelectItem value="advertencia">Advertencia</SelectItem>
+                                <SelectItem value="todos"
+                                    >Todas las gravedades</SelectItem
+                                >
+                                <SelectItem value="informativo"
+                                    >Informativo</SelectItem
+                                >
+                                <SelectItem value="advertencia"
+                                    >Advertencia</SelectItem
+                                >
                                 <SelectItem value="critico">Crítico</SelectItem>
                             </SelectContent>
                         </Select>
@@ -291,20 +322,28 @@ onMounted(() => void loadEvents());
                                 :disabled="refreshing"
                                 @click="loadEvents(true)"
                             >
-                                <RefreshCw :class="['h-4 w-4', refreshing && 'animate-spin']" />
+                                <RefreshCw
+                                    :class="[
+                                        'h-4 w-4',
+                                        refreshing && 'animate-spin',
+                                    ]"
+                                />
                                 Actualizar
                             </Button>
                         </div>
                     </div>
                 </div>
 
-                <div class="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-4">
+                <div
+                    class="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-4"
+                >
                     <div class="flex items-center gap-2 text-sm text-slate-600">
                         <BellRing class="h-4 w-4 text-blue-600" />
                         <span>Eventos registrados</span>
                     </div>
                     <span class="text-xs text-slate-500">
-                        Mostrando {{ filteredEvents.length }} de {{ eventos.length }}
+                        Mostrando {{ filteredEvents.length }} de
+                        {{ eventos.length }}
                     </span>
                 </div>
 
@@ -319,14 +358,24 @@ onMounted(() => void loadEvents());
                     v-else-if="filteredEvents.length === 0"
                     class="flex min-h-64 flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50 px-5 py-10 text-center"
                 >
-                    <div class="mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500">
+                    <div
+                        class="mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500"
+                    >
                         <Inbox class="h-6 w-6" />
                     </div>
-                    <h2 class="font-semibold text-slate-900">Sin eventos coincidentes</h2>
+                    <h2 class="font-semibold text-slate-900">
+                        Sin eventos coincidentes
+                    </h2>
                     <p class="mt-2 max-w-md text-sm text-slate-500">
-                        No hay eventos registrados que coincidan con los filtros aplicados.
+                        No hay eventos registrados que coincidan con los filtros
+                        aplicados.
                     </p>
-                    <Button v-if="hasActiveFilters" variant="outline" class="mt-4 border-slate-200" @click="clearFilters">
+                    <Button
+                        v-if="hasActiveFilters"
+                        variant="outline"
+                        class="mt-4 border-slate-200"
+                        @click="clearFilters"
+                    >
                         Limpiar filtros
                     </Button>
                 </div>
@@ -336,15 +385,24 @@ onMounted(() => void loadEvents());
                         <Card
                             v-for="evento in filteredEvents"
                             :key="evento.id"
-                            :class="['overflow-hidden rounded-md border border-l-4 border-slate-200 bg-white shadow-none', severityBorder(evento.gravedad)]"
+                            :class="[
+                                'overflow-hidden rounded-md border border-l-4 border-slate-200 bg-white shadow-none',
+                                severityBorder(evento.gravedad),
+                            ]"
                         >
                             <CardContent class="space-y-3 p-4">
-                                <div class="flex min-w-0 items-start justify-between gap-3">
+                                <div
+                                    class="flex min-w-0 items-start justify-between gap-3"
+                                >
                                     <div class="min-w-0">
-                                        <h2 class="break-words font-semibold text-slate-900">
+                                        <h2
+                                            class="font-semibold break-words text-slate-900"
+                                        >
                                             {{ evento.tipo_evento }}
                                         </h2>
-                                        <p class="mt-1 break-words text-sm leading-5 text-slate-600">
+                                        <p
+                                            class="mt-1 text-sm leading-5 break-words text-slate-600"
+                                        >
                                             {{ evento.descripcion }}
                                         </p>
                                     </div>
@@ -360,11 +418,22 @@ onMounted(() => void loadEvents());
                                         <Trash2 class="h-4 w-4" />
                                     </Button>
                                 </div>
-                                <div class="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3">
-                                    <Badge :class="['border', severityColor(evento.gravedad), evento.gravedad === 'critico' && 'animate-pulse']">
+                                <div
+                                    class="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3"
+                                >
+                                    <Badge
+                                        :class="[
+                                            'border',
+                                            severityColor(evento.gravedad),
+                                            evento.gravedad === 'critico' &&
+                                                'animate-pulse',
+                                        ]"
+                                    >
                                         {{ severityLabel(evento.gravedad) }}
                                     </Badge>
-                                    <time class="inline-flex items-center gap-1.5 text-xs text-slate-500">
+                                    <time
+                                        class="inline-flex items-center gap-1.5 text-xs text-slate-500"
+                                    >
                                         <Clock3 class="h-3.5 w-3.5" />
                                         {{ formatDate(evento.fecha_creacion) }}
                                     </time>
@@ -374,27 +443,83 @@ onMounted(() => void loadEvents());
                     </div>
 
                     <div class="hidden overflow-x-auto md:block">
-                        <table class="w-full min-w-[760px] table-auto text-left text-sm">
-                            <thead class="border-y border-slate-200 bg-slate-50 text-xs uppercase text-slate-500">
+                        <table
+                            class="w-full min-w-[760px] table-auto text-left text-sm"
+                        >
+                            <thead
+                                class="border-y border-slate-200 bg-slate-50 text-xs text-slate-500 uppercase"
+                            >
                                 <tr>
-                                    <th scope="col" class="px-4 py-3 font-medium">Tipo</th>
-                                    <th scope="col" class="px-4 py-3 font-medium">Descripción</th>
-                                    <th scope="col" class="px-4 py-3 font-medium">Gravedad</th>
-                                    <th scope="col" class="px-4 py-3 font-medium">Fecha y hora</th>
-                                    <th v-if="isAdmin" scope="col" class="w-16 px-4 py-3 text-right font-medium">Acciones</th>
+                                    <th
+                                        scope="col"
+                                        class="px-4 py-3 font-medium"
+                                    >
+                                        Tipo
+                                    </th>
+                                    <th
+                                        scope="col"
+                                        class="px-4 py-3 font-medium"
+                                    >
+                                        Descripción
+                                    </th>
+                                    <th
+                                        scope="col"
+                                        class="px-4 py-3 font-medium"
+                                    >
+                                        Gravedad
+                                    </th>
+                                    <th
+                                        scope="col"
+                                        class="px-4 py-3 font-medium"
+                                    >
+                                        Fecha y hora
+                                    </th>
+                                    <th
+                                        v-if="isAdmin"
+                                        scope="col"
+                                        class="w-16 px-4 py-3 text-right font-medium"
+                                    >
+                                        Acciones
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100">
-                                <tr v-for="evento in filteredEvents" :key="evento.id" class="align-top hover:bg-slate-50/70">
-                                    <td class="max-w-56 break-words px-4 py-4 font-medium text-slate-900">{{ evento.tipo_evento }}</td>
-                                    <td class="max-w-xl break-words px-4 py-4 text-slate-600">{{ evento.descripcion }}</td>
+                                <tr
+                                    v-for="evento in filteredEvents"
+                                    :key="evento.id"
+                                    class="align-top hover:bg-slate-50/70"
+                                >
+                                    <td
+                                        class="max-w-56 px-4 py-4 font-medium break-words text-slate-900"
+                                    >
+                                        {{ evento.tipo_evento }}
+                                    </td>
+                                    <td
+                                        class="max-w-xl px-4 py-4 break-words text-slate-600"
+                                    >
+                                        {{ evento.descripcion }}
+                                    </td>
                                     <td class="px-4 py-4">
-                                        <Badge :class="['border', severityColor(evento.gravedad), evento.gravedad === 'critico' && 'animate-pulse']">
+                                        <Badge
+                                            :class="[
+                                                'border',
+                                                severityColor(evento.gravedad),
+                                                evento.gravedad === 'critico' &&
+                                                    'animate-pulse',
+                                            ]"
+                                        >
                                             {{ severityLabel(evento.gravedad) }}
                                         </Badge>
                                     </td>
-                                    <td class="whitespace-nowrap px-4 py-4 text-slate-500">{{ formatDate(evento.fecha_creacion) }}</td>
-                                    <td v-if="isAdmin" class="px-4 py-3 text-right">
+                                    <td
+                                        class="px-4 py-4 whitespace-nowrap text-slate-500"
+                                    >
+                                        {{ formatDate(evento.fecha_creacion) }}
+                                    </td>
+                                    <td
+                                        v-if="isAdmin"
+                                        class="px-4 py-3 text-right"
+                                    >
                                         <Button
                                             variant="ghost"
                                             size="icon"
@@ -422,8 +547,12 @@ onMounted(() => void loadEvents());
                         Eliminar evento
                     </DialogTitle>
                     <DialogDescription class="text-slate-600">
-                        Esta acción es permanente. ¿Confirmas que deseas eliminar
-                        <strong class="font-semibold text-slate-900">{{ eventToDelete?.tipo_evento }}</strong>?
+                        Esta acción es permanente. ¿Confirmas que deseas
+                        eliminar
+                        <strong class="font-semibold text-slate-900">{{
+                            eventToDelete?.tipo_evento
+                        }}</strong
+                        >?
                     </DialogDescription>
                 </DialogHeader>
                 <DialogFooter class="gap-2 sm:justify-end">
@@ -432,10 +561,21 @@ onMounted(() => void loadEvents());
                             Cancelar
                         </Button>
                     </DialogClose>
-                    <Button variant="destructive" :disabled="deleting" @click="deleteEvent">
-                        <RefreshCw v-if="deleting" class="h-4 w-4 animate-spin" />
+                    <Button
+                        variant="destructive"
+                        :disabled="deleting"
+                        @click="deleteEvent"
+                    >
+                        <RefreshCw
+                            v-if="deleting"
+                            class="h-4 w-4 animate-spin"
+                        />
                         <Trash2 v-else class="h-4 w-4" />
-                        {{ deleting ? 'Eliminando…' : 'Eliminar definitivamente' }}
+                        {{
+                            deleting
+                                ? 'Eliminando…'
+                                : 'Eliminar definitivamente'
+                        }}
                     </Button>
                 </DialogFooter>
             </DialogContent>

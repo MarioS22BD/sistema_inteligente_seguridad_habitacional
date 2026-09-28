@@ -95,7 +95,11 @@ const fetchEstado = async (): Promise<void> => {
         const previousState = estado.value?.estado;
         estado.value = nextState;
 
-        if (previousState && previousState !== 'ALARMA' && nextState?.estado === 'ALARMA') {
+        if (
+            previousState &&
+            previousState !== 'ALARMA' &&
+            nextState?.estado === 'ALARMA'
+        ) {
             toast.error('Alarma activa. Revise el estado de la habitación.');
         }
 
@@ -172,7 +176,9 @@ const toggleSystem = async (): Promise<void> => {
         toast.success(nextActive ? 'Sistema armado.' : 'Sistema desarmado.');
     } catch (err) {
         toast.error(
-            err instanceof Error ? err.message : 'Error al actualizar el sistema.',
+            err instanceof Error
+                ? err.message
+                : 'Error al actualizar el sistema.',
         );
     } finally {
         isSubmitting.value = false;
@@ -217,7 +223,10 @@ const ultimaAlerta = computed(() => {
     }
 
     return {
-        title: estado.value.estado === 'ALARMA' ? 'ALARMA ACTIVA' : 'Última incidencia',
+        title:
+            estado.value.estado === 'ALARMA'
+                ? 'ALARMA ACTIVA'
+                : 'Última incidencia',
         description: estado.value.descripcion_ultima_alerta,
         fecha: estado.value.fecha_ultima_alerta,
     };
@@ -225,7 +234,8 @@ const ultimaAlerta = computed(() => {
 
 const severityClass = (gravedad: string): string => {
     if (gravedad === 'critico') return 'border-red-300 bg-red-50 text-red-700';
-    if (gravedad === 'advertencia') return 'border-amber-300 bg-amber-50 text-amber-700';
+    if (gravedad === 'advertencia')
+        return 'border-amber-300 bg-amber-50 text-amber-700';
     return 'border-sky-300 bg-sky-50 text-sky-700';
 };
 </script>
@@ -234,22 +244,51 @@ const severityClass = (gravedad: string): string => {
     <Head title="Dashboard" />
 
     <div class="w-full space-y-6 p-4 sm:p-6 xl:p-8">
-        <header class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <header
+            class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+        >
             <div>
-                <p class="text-xs font-semibold uppercase text-blue-600">Monitoreo en vivo</p>
-                <h1 class="mt-1 text-2xl font-semibold text-slate-900 sm:text-3xl">Panel de seguridad</h1>
-                <p class="mt-1 text-sm text-slate-500">Estado de sensores y eventos de seguridad</p>
+                <p class="text-xs font-semibold text-blue-600 uppercase">
+                    Monitoreo en vivo
+                </p>
+                <h1
+                    class="mt-1 text-2xl font-semibold text-slate-900 sm:text-3xl"
+                >
+                    Panel de seguridad
+                </h1>
+                <p class="mt-1 text-sm text-slate-500">
+                    Estado de sensores y eventos de seguridad
+                </p>
             </div>
             <div class="flex flex-wrap items-center gap-3">
-                <Badge variant="outline" class="border-slate-200 bg-white text-slate-700">
-                    {{ usuario.name ?? 'Usuario' }} · {{ usuario.rol ?? 'Sin rol' }}
+                <Badge
+                    variant="outline"
+                    class="border-slate-200 bg-white text-slate-700"
+                >
+                    {{ usuario.name ?? 'Usuario' }} ·
+                    {{ usuario.rol ?? 'Sin rol' }}
                 </Badge>
-                <div class="inline-flex items-center gap-2 text-xs text-slate-500" aria-live="polite">
-                    <span :class="['h-2 w-2 rounded-full', isRefreshing ? 'bg-amber-400' : 'bg-emerald-500']"></span>
+                <div
+                    class="inline-flex items-center gap-2 text-xs text-slate-500"
+                    aria-live="polite"
+                >
+                    <span
+                        :class="[
+                            'h-2 w-2 rounded-full',
+                            isRefreshing ? 'bg-amber-400' : 'bg-emerald-500',
+                        ]"
+                    ></span>
                     {{ isRefreshing ? 'Actualizando' : 'En vivo · 4 s' }}
                 </div>
-                <Button variant="outline" size="sm" :disabled="isRefreshing" @click="manualRefresh">
-                    <RefreshCw :class="['h-4 w-4', isRefreshing && 'animate-spin']" />
+                <Button
+                    variant="outline"
+                    size="sm"
+                    :disabled="isRefreshing"
+                    @click="manualRefresh"
+                >
+                    <RefreshCw
+                        :class="['h-4 w-4', isRefreshing && 'animate-spin']"
+                    />
                     Actualizar
                 </Button>
             </div>
@@ -263,31 +302,67 @@ const severityClass = (gravedad: string): string => {
             {{ error }}
         </div>
 
-        <div v-if="loading" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div
+            v-if="loading"
+            class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
+        >
             <Skeleton v-for="n in 4" :key="n" class="h-40 w-full rounded-lg" />
         </div>
 
-        <div v-else class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Card class="min-w-0 rounded-lg border border-slate-200 bg-white shadow-sm">
+        <div
+            v-else
+            class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
+        >
+            <Card
+                class="min-w-0 rounded-lg border border-slate-200 bg-white shadow-sm"
+            >
                 <CardHeader class="pb-3">
                     <div class="flex items-center justify-between gap-2">
-                        <CardTitle class="text-sm font-medium text-slate-500">Estado de alarma</CardTitle>
-                        <ShieldCheck :class="['h-5 w-5', estado?.esta_activado ? 'text-emerald-600' : 'text-slate-400']" />
+                        <CardTitle class="text-sm font-medium text-slate-500"
+                            >Estado de alarma</CardTitle
+                        >
+                        <ShieldCheck
+                            :class="[
+                                'h-5 w-5',
+                                estado?.esta_activado
+                                    ? 'text-emerald-600'
+                                    : 'text-slate-400',
+                            ]"
+                        />
                     </div>
                 </CardHeader>
                 <CardContent class="space-y-4">
-                    <Badge :class="['border', estado?.esta_activado ? 'border-emerald-300 bg-emerald-50 text-emerald-700' : 'border-slate-300 bg-slate-100 text-slate-600']">
+                    <Badge
+                        :class="[
+                            'border',
+                            estado?.esta_activado
+                                ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
+                                : 'border-slate-300 bg-slate-100 text-slate-600',
+                        ]"
+                    >
                         {{ estado?.esta_activado ? 'ACTIVADO' : 'DESACTIVADO' }}
                     </Badge>
                     <Button
                         class="w-full"
-                        :variant="estado?.esta_activado ? 'destructive' : 'default'"
+                        :variant="
+                            estado?.esta_activado ? 'destructive' : 'default'
+                        "
                         :disabled="!canControlSystem || !estado || isSubmitting"
-                        :title="canControlSystem ? undefined : 'Tu rol tiene acceso de solo lectura'"
+                        :title="
+                            canControlSystem
+                                ? undefined
+                                : 'Tu rol tiene acceso de solo lectura'
+                        "
                         @click="toggleSystem"
                     >
                         <ShieldAlert class="h-4 w-4" />
-                        {{ isSubmitting ? 'Actualizando…' : estado?.esta_activado ? 'Desarmar sistema' : 'Armar sistema' }}
+                        {{
+                            isSubmitting
+                                ? 'Actualizando…'
+                                : estado?.esta_activado
+                                  ? 'Desarmar sistema'
+                                  : 'Armar sistema'
+                        }}
                     </Button>
                     <p v-if="!canControlSystem" class="text-xs text-slate-500">
                         Solo lectura: tu rol no permite cambiar el armado.
@@ -295,54 +370,124 @@ const severityClass = (gravedad: string): string => {
                 </CardContent>
             </Card>
 
-            <Card class="min-w-0 rounded-lg border border-slate-200 bg-white shadow-sm">
+            <Card
+                class="min-w-0 rounded-lg border border-slate-200 bg-white shadow-sm"
+            >
                 <CardHeader class="pb-3">
                     <div class="flex items-center justify-between gap-2">
-                        <CardTitle class="text-sm font-medium text-slate-500">Puerta</CardTitle>
-                        <component :is="estado?.puerta_abierta ? DoorOpen : DoorClosed" :class="['h-5 w-5', estado?.puerta_abierta ? 'text-red-600' : 'text-emerald-600']" />
+                        <CardTitle class="text-sm font-medium text-slate-500"
+                            >Puerta</CardTitle
+                        >
+                        <component
+                            :is="estado?.puerta_abierta ? DoorOpen : DoorClosed"
+                            :class="[
+                                'h-5 w-5',
+                                estado?.puerta_abierta
+                                    ? 'text-red-600'
+                                    : 'text-emerald-600',
+                            ]"
+                        />
                     </div>
                 </CardHeader>
                 <CardContent>
-                    <div :class="['text-2xl font-semibold', estado?.puerta_abierta ? 'text-red-700' : 'text-emerald-700']">
+                    <div
+                        :class="[
+                            'text-2xl font-semibold',
+                            estado?.puerta_abierta
+                                ? 'text-red-700'
+                                : 'text-emerald-700',
+                        ]"
+                    >
                         {{ estado?.puerta_abierta ? 'ABIERTA' : 'CERRADA' }}
                     </div>
                     <p class="mt-2 text-sm text-slate-500">Sensor de acceso</p>
                 </CardContent>
             </Card>
 
-            <Card class="min-w-0 rounded-lg border border-slate-200 bg-white shadow-sm">
+            <Card
+                class="min-w-0 rounded-lg border border-slate-200 bg-white shadow-sm"
+            >
                 <CardHeader class="pb-3">
                     <div class="flex items-center justify-between gap-2">
-                        <CardTitle class="text-sm font-medium text-slate-500">Movimiento</CardTitle>
-                        <Activity :class="['h-5 w-5', estado?.movimiento_detectado ? 'text-amber-600' : 'text-emerald-600']" />
+                        <CardTitle class="text-sm font-medium text-slate-500"
+                            >Movimiento</CardTitle
+                        >
+                        <Activity
+                            :class="[
+                                'h-5 w-5',
+                                estado?.movimiento_detectado
+                                    ? 'text-amber-600'
+                                    : 'text-emerald-600',
+                            ]"
+                        />
                     </div>
                 </CardHeader>
                 <CardContent>
-                    <div :class="['text-2xl font-semibold', estado?.movimiento_detectado ? 'text-amber-700' : 'text-emerald-700']">
-                        {{ estado?.movimiento_detectado ? 'DETECTADO' : 'NO DETECTADO' }}
+                    <div
+                        :class="[
+                            'text-2xl font-semibold',
+                            estado?.movimiento_detectado
+                                ? 'text-amber-700'
+                                : 'text-emerald-700',
+                        ]"
+                    >
+                        {{
+                            estado?.movimiento_detectado
+                                ? 'DETECTADO'
+                                : 'NO DETECTADO'
+                        }}
                     </div>
-                    <p class="mt-2 text-sm text-slate-500">Sensor de presencia</p>
+                    <p class="mt-2 text-sm text-slate-500">
+                        Sensor de presencia
+                    </p>
                 </CardContent>
             </Card>
 
-            <Card class="min-w-0 rounded-lg border border-slate-200 bg-white shadow-sm">
+            <Card
+                class="min-w-0 rounded-lg border border-slate-200 bg-white shadow-sm"
+            >
                 <CardHeader class="pb-3">
                     <div class="flex items-center justify-between gap-2">
-                        <CardTitle class="text-sm font-medium text-slate-500">Estado global</CardTitle>
-                        <TriangleAlert :class="['h-5 w-5', estado?.estado === 'ALARMA' ? 'animate-pulse text-red-600' : 'text-blue-600']" />
+                        <CardTitle class="text-sm font-medium text-slate-500"
+                            >Estado global</CardTitle
+                        >
+                        <TriangleAlert
+                            :class="[
+                                'h-5 w-5',
+                                estado?.estado === 'ALARMA'
+                                    ? 'animate-pulse text-red-600'
+                                    : 'text-blue-600',
+                            ]"
+                        />
                     </div>
                 </CardHeader>
                 <CardContent>
-                    <Badge :class="['border', estadoChip.className, estado?.estado === 'ALARMA' && 'animate-pulse']">
-                        {{ estadoChip.label === 'ALARMA' ? 'ALARMA / INCIDENCIA' : estadoChip.label }}
+                    <Badge
+                        :class="[
+                            'border',
+                            estadoChip.className,
+                            estado?.estado === 'ALARMA' && 'animate-pulse',
+                        ]"
+                    >
+                        {{
+                            estadoChip.label === 'ALARMA'
+                                ? 'ALARMA / INCIDENCIA'
+                                : estadoChip.label
+                        }}
                     </Badge>
-                    <p class="mt-3 text-sm text-slate-500">Condición reportada por el sistema</p>
+                    <p class="mt-3 text-sm text-slate-500">
+                        Condición reportada por el sistema
+                    </p>
                 </CardContent>
             </Card>
         </div>
 
-        <div class="grid min-w-0 gap-4 xl:grid-cols-[minmax(0,1.6fr)_minmax(300px,0.9fr)]">
-            <Card class="min-w-0 rounded-lg border border-slate-200 bg-white shadow-sm">
+        <div
+            class="grid min-w-0 gap-4 xl:grid-cols-[minmax(0,1.6fr)_minmax(300px,0.9fr)]"
+        >
+            <Card
+                class="min-w-0 rounded-lg border border-slate-200 bg-white shadow-sm"
+            >
                 <CardHeader class="pb-3">
                     <div class="flex items-center gap-2">
                         <BellRing class="h-5 w-5 text-red-500" />
@@ -350,19 +495,48 @@ const severityClass = (gravedad: string): string => {
                     </div>
                 </CardHeader>
                 <CardContent class="space-y-3">
-                    <div :class="['rounded-lg border p-4 sm:p-5', estado?.estado === 'ALARMA' ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-slate-50']">
+                    <div
+                        :class="[
+                            'rounded-lg border p-4 sm:p-5',
+                            estado?.estado === 'ALARMA'
+                                ? 'border-red-300 bg-red-50'
+                                : 'border-slate-200 bg-slate-50',
+                        ]"
+                    >
                         <div class="flex items-center justify-between gap-3">
-                            <div :class="['min-w-0 text-base font-semibold', estado?.estado === 'ALARMA' ? 'text-red-700' : 'text-slate-900']">
+                            <div
+                                :class="[
+                                    'min-w-0 text-base font-semibold',
+                                    estado?.estado === 'ALARMA'
+                                        ? 'text-red-700'
+                                        : 'text-slate-900',
+                                ]"
+                            >
                                 {{ ultimaAlerta.title }}
                             </div>
                             <Badge
                                 variant="outline"
-                                :class="estado?.estado === 'ALARMA' ? 'shrink-0 border-red-300 bg-red-100 text-red-700' : 'shrink-0 border-slate-300 bg-white text-slate-600'"
+                                :class="
+                                    estado?.estado === 'ALARMA'
+                                        ? 'shrink-0 border-red-300 bg-red-100 text-red-700'
+                                        : 'shrink-0 border-slate-300 bg-white text-slate-600'
+                                "
                             >
-                                {{ estado?.estado === 'ALARMA' ? 'Crítica' : 'Registro' }}
+                                {{
+                                    estado?.estado === 'ALARMA'
+                                        ? 'Crítica'
+                                        : 'Registro'
+                                }}
                             </Badge>
                         </div>
-                        <p :class="['mt-2 break-words text-sm', estado?.estado === 'ALARMA' ? 'text-red-700' : 'text-slate-600']">
+                        <p
+                            :class="[
+                                'mt-2 text-sm break-words',
+                                estado?.estado === 'ALARMA'
+                                    ? 'text-red-700'
+                                    : 'text-slate-600',
+                            ]"
+                        >
                             {{ ultimaAlerta.description }}
                         </p>
                         <p class="mt-3 text-xs text-slate-500">
@@ -372,7 +546,9 @@ const severityClass = (gravedad: string): string => {
                 </CardContent>
             </Card>
 
-            <Card class="min-w-0 rounded-lg border border-slate-200 bg-white shadow-sm">
+            <Card
+                class="min-w-0 rounded-lg border border-slate-200 bg-white shadow-sm"
+            >
                 <CardHeader class="pb-3">
                     <div class="flex items-center gap-2">
                         <ShieldCheck class="h-5 w-5 text-blue-500" />
@@ -383,26 +559,44 @@ const severityClass = (gravedad: string): string => {
                     <div
                         class="grid grid-cols-3 gap-2 text-center text-sm text-slate-600"
                     >
-                        <div class="rounded-md border border-slate-200 bg-slate-50 p-3">
+                        <div
+                            class="rounded-md border border-slate-200 bg-slate-50 p-3"
+                        >
                             <div class="text-xs text-slate-500">Sistema</div>
-                            <div class="mt-2 text-sm font-semibold text-slate-900">
+                            <div
+                                class="mt-2 text-sm font-semibold text-slate-900"
+                            >
                                 {{ estado?.esta_activado ? 'On' : 'Off' }}
                             </div>
                         </div>
-                        <div class="rounded-md border border-slate-200 bg-slate-50 p-3">
+                        <div
+                            class="rounded-md border border-slate-200 bg-slate-50 p-3"
+                        >
                             <div class="text-xs text-slate-500">Puerta</div>
-                            <div class="mt-2 text-sm font-semibold text-slate-900">
-                                {{ estado?.puerta_abierta ? 'Abierta' : 'Cerrada' }}
+                            <div
+                                class="mt-2 text-sm font-semibold text-slate-900"
+                            >
+                                {{
+                                    estado?.puerta_abierta
+                                        ? 'Abierta'
+                                        : 'Cerrada'
+                                }}
                             </div>
                         </div>
-                        <div class="rounded-md border border-slate-200 bg-slate-50 p-3">
+                        <div
+                            class="rounded-md border border-slate-200 bg-slate-50 p-3"
+                        >
                             <div class="text-xs text-slate-500">Movimiento</div>
-                            <div class="mt-2 text-sm font-semibold text-slate-900">
+                            <div
+                                class="mt-2 text-sm font-semibold text-slate-900"
+                            >
                                 {{ estado?.movimiento_detectado ? 'Sí' : 'No' }}
                             </div>
                         </div>
                     </div>
-                    <div class="mt-5 flex items-center justify-between gap-2 rounded-md border border-slate-200 bg-slate-50 p-3">
+                    <div
+                        class="mt-5 flex items-center justify-between gap-2 rounded-md border border-slate-200 bg-slate-50 p-3"
+                    >
                         <span class="text-sm text-slate-600">
                             Estado del sistema
                         </span>
@@ -414,52 +608,131 @@ const severityClass = (gravedad: string): string => {
             </Card>
         </div>
 
-        <Card class="min-w-0 rounded-lg border border-slate-200 bg-white shadow-sm">
+        <Card
+            class="min-w-0 rounded-lg border border-slate-200 bg-white shadow-sm"
+        >
             <CardHeader class="pb-3">
                 <div class="flex items-center justify-between gap-3">
                     <div class="flex items-center gap-2">
                         <TriangleAlert class="h-5 w-5 text-amber-500" />
                         <CardTitle class="text-lg">Eventos recientes</CardTitle>
                     </div>
-                    <span class="text-xs text-slate-500">Últimos {{ Math.min(eventos.length, 5) }}</span>
+                    <span class="text-xs text-slate-500"
+                        >Últimos {{ Math.min(eventos.length, 5) }}</span
+                    >
                 </div>
             </CardHeader>
             <CardContent>
                 <div v-if="loading" class="space-y-3">
-                    <Skeleton v-for="n in 4" :key="n" class="h-14 w-full rounded-md" />
+                    <Skeleton
+                        v-for="n in 4"
+                        :key="n"
+                        class="h-14 w-full rounded-md"
+                    />
                 </div>
-                <div v-else-if="eventos.length === 0" class="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500">
+                <div
+                    v-else-if="eventos.length === 0"
+                    class="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500"
+                >
                     No hay eventos registrados todavía.
                 </div>
 
                 <div v-else>
                     <div class="space-y-3 md:hidden">
-                        <article v-for="evento in eventos.slice(0, 5)" :key="evento.id" class="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                            <div class="flex flex-wrap items-center justify-between gap-2">
-                                <h3 class="text-sm font-semibold text-slate-900">{{ evento.tipo_evento }}</h3>
-                                <Badge :class="['border', severityClass(evento.gravedad)]">{{ evento.gravedad }}</Badge>
+                        <article
+                            v-for="evento in eventos.slice(0, 5)"
+                            :key="evento.id"
+                            class="rounded-lg border border-slate-200 bg-slate-50 p-4"
+                        >
+                            <div
+                                class="flex flex-wrap items-center justify-between gap-2"
+                            >
+                                <h3
+                                    class="text-sm font-semibold text-slate-900"
+                                >
+                                    {{ evento.tipo_evento }}
+                                </h3>
+                                <Badge
+                                    :class="[
+                                        'border',
+                                        severityClass(evento.gravedad),
+                                    ]"
+                                    >{{ evento.gravedad }}</Badge
+                                >
                             </div>
-                            <p class="mt-2 break-words text-sm text-slate-600">{{ evento.descripcion }}</p>
-                            <time class="mt-3 block text-xs text-slate-500">{{ formatDate(evento.fecha_creacion) }}</time>
+                            <p class="mt-2 text-sm break-words text-slate-600">
+                                {{ evento.descripcion }}
+                            </p>
+                            <time class="mt-3 block text-xs text-slate-500">{{
+                                formatDate(evento.fecha_creacion)
+                            }}</time>
                         </article>
                     </div>
 
                     <div class="hidden overflow-x-auto md:block">
-                        <table class="w-full min-w-[640px] table-auto text-left text-sm">
-                            <thead class="border-b border-slate-200 text-xs uppercase text-slate-500">
+                        <table
+                            class="w-full min-w-[640px] table-auto text-left text-sm"
+                        >
+                            <thead
+                                class="border-b border-slate-200 text-xs text-slate-500 uppercase"
+                            >
                                 <tr>
-                                    <th scope="col" class="px-3 py-3 font-medium">Tipo de evento</th>
-                                    <th scope="col" class="px-3 py-3 font-medium">Descripción</th>
-                                    <th scope="col" class="px-3 py-3 font-medium">Gravedad</th>
-                                    <th scope="col" class="px-3 py-3 font-medium">Fecha y hora</th>
+                                    <th
+                                        scope="col"
+                                        class="px-3 py-3 font-medium"
+                                    >
+                                        Tipo de evento
+                                    </th>
+                                    <th
+                                        scope="col"
+                                        class="px-3 py-3 font-medium"
+                                    >
+                                        Descripción
+                                    </th>
+                                    <th
+                                        scope="col"
+                                        class="px-3 py-3 font-medium"
+                                    >
+                                        Gravedad
+                                    </th>
+                                    <th
+                                        scope="col"
+                                        class="px-3 py-3 font-medium"
+                                    >
+                                        Fecha y hora
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100">
-                                <tr v-for="evento in eventos.slice(0, 5)" :key="evento.id" class="align-top">
-                                    <td class="px-3 py-4 font-medium text-slate-900">{{ evento.tipo_evento }}</td>
-                                    <td class="max-w-lg break-words px-3 py-4 text-slate-600">{{ evento.descripcion }}</td>
-                                    <td class="px-3 py-4"><Badge :class="['border', severityClass(evento.gravedad)]">{{ evento.gravedad }}</Badge></td>
-                                    <td class="whitespace-nowrap px-3 py-4 text-slate-500">{{ formatDate(evento.fecha_creacion) }}</td>
+                                <tr
+                                    v-for="evento in eventos.slice(0, 5)"
+                                    :key="evento.id"
+                                    class="align-top"
+                                >
+                                    <td
+                                        class="px-3 py-4 font-medium text-slate-900"
+                                    >
+                                        {{ evento.tipo_evento }}
+                                    </td>
+                                    <td
+                                        class="max-w-lg px-3 py-4 break-words text-slate-600"
+                                    >
+                                        {{ evento.descripcion }}
+                                    </td>
+                                    <td class="px-3 py-4">
+                                        <Badge
+                                            :class="[
+                                                'border',
+                                                severityClass(evento.gravedad),
+                                            ]"
+                                            >{{ evento.gravedad }}</Badge
+                                        >
+                                    </td>
+                                    <td
+                                        class="px-3 py-4 whitespace-nowrap text-slate-500"
+                                    >
+                                        {{ formatDate(evento.fecha_creacion) }}
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>

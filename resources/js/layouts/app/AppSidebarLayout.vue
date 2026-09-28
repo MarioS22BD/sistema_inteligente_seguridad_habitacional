@@ -27,7 +27,7 @@ withDefaults(defineProps<Props>(), {
                     :breadcrumbs="breadcrumbs"
                     class="border-b border-slate-800/80 bg-slate-950/95 backdrop-blur supports-[backdrop-filter]:bg-slate-950/80"
                 />
-                <div class="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
+                <div class="min-h-0 flex-1 overflow-x-hidden overflow-y-auto">
                     <slot />
                 </div>
             </AppContent>

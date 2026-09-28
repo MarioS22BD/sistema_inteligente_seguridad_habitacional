@@ -64,7 +64,9 @@ const mainNavItems: NavItem[] = [
                                 <ShieldCheck class="h-5 w-5 text-blue-400" />
                             </div>
                             <div class="min-w-0 text-left leading-tight">
-                                <div class="truncate text-sm font-semibold text-white">
+                                <div
+                                    class="truncate text-sm font-semibold text-white"
+                                >
                                     Sistema de
                                 </div>
                                 <div class="truncate text-xs text-slate-300">
@@ -84,7 +86,9 @@ const mainNavItems: NavItem[] = [
                 class="mt-5 rounded-xl border border-slate-800 bg-slate-900/80 p-3 text-xs text-slate-300 shadow-inner shadow-slate-950/40"
             >
                 <div class="mb-2 flex items-center justify-between gap-2">
-                    <div class="flex items-center gap-2 font-medium text-slate-100">
+                    <div
+                        class="flex items-center gap-2 font-medium text-slate-100"
+                    >
                         <ShieldEllipsis class="h-4 w-4 text-blue-400" />
                         Estado del sistema
                     </div>
@@ -101,7 +105,7 @@ const mainNavItems: NavItem[] = [
         </SidebarContent>
 
         <SidebarFooter class="border-t border-slate-800 bg-slate-950/90">
-            <div class="px-2 pb-2 pt-2">
+            <div class="px-2 pt-2 pb-2">
                 <Link
                     :href="dashboard()"
                     class="flex items-center justify-center gap-2 rounded-xl border border-slate-800 bg-slate-900/80 px-3 py-2.5 text-sm font-medium text-slate-200 transition hover:border-blue-500/60 hover:bg-slate-900 hover:text-white"
