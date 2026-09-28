@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             UsuarioSeeder::class,
             EstadoSistemaSeeder::class,
             EventoSeguridadSeeder::class,
+            RolesPermisosSeeder::class,
         ]);
     }
 }
