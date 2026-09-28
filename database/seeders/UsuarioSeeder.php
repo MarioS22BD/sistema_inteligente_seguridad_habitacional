@@ -32,7 +32,7 @@ class UsuarioSeeder extends Seeder
         ];
 
         foreach ($usuarios as $usuario) {
-            User::updateOrCreate(
+            $cuenta = User::updateOrCreate(
                 ['email' => $usuario['email']],
                 [
                     'name' => $usuario['name'],
@@ -40,6 +40,10 @@ class UsuarioSeeder extends Seeder
                     'password' => Hash::make('password123'),
                 ],
             );
+
+            if (! $cuenta->hasVerifiedEmail()) {
+                $cuenta->forceFill(['email_verified_at' => now()])->save();
+            }
         }
     }
 }

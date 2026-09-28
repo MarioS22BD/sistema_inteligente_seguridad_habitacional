@@ -16,12 +16,22 @@ withDefaults(defineProps<Props>(), {
 </script>
 
 <template>
-    <AppShell variant="sidebar">
-        <AppSidebar />
-        <AppContent variant="sidebar" class="min-w-0 overflow-x-clip">
-            <AppSidebarHeader :breadcrumbs="breadcrumbs" />
-            <slot />
-        </AppContent>
-        <Toaster />
-    </AppShell>
+    <div class="min-h-screen w-full bg-slate-950 text-slate-100">
+        <AppShell variant="sidebar">
+            <AppSidebar />
+            <AppContent
+                variant="sidebar"
+                class="min-h-screen w-full flex-1 overflow-hidden bg-slate-950 text-slate-100"
+            >
+                <AppSidebarHeader
+                    :breadcrumbs="breadcrumbs"
+                    class="border-b border-slate-800/80 bg-slate-950/95 backdrop-blur supports-[backdrop-filter]:bg-slate-950/80"
+                />
+                <div class="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
+                    <slot />
+                </div>
+            </AppContent>
+            <Toaster />
+        </AppShell>
+    </div>
 </template>
