@@ -52,6 +52,16 @@ it('allows administrators to create users with any role', function (): void {
         'email' => 'nuevo.admin@seguridad.test',
         'rol' => 'administrador',
     ]);
+
+    $createdUser = User::query()
+        ->where('email', 'nuevo.admin@seguridad.test')
+        ->firstOrFail();
+
+    expect($createdUser->hasVerifiedEmail())->toBeTrue();
+
+    $this->actingAs($createdUser)
+        ->get('/dashboard')
+        ->assertOk();
 });
 
 it('allows employees to create normal users but not privileged roles', function (): void {
@@ -65,6 +75,16 @@ it('allows employees to create normal users but not privileged roles', function 
             'rol' => 'usuario',
         ])
         ->assertCreated();
+
+    $createdUser = User::query()
+        ->where('email', 'nuevo.usuario@seguridad.test')
+        ->firstOrFail();
+
+    expect($createdUser->hasVerifiedEmail())->toBeTrue();
+
+    $this->actingAs($createdUser)
+        ->get('/dashboard')
+        ->assertOk();
 
     $this->actingAs($employee, 'sanctum')
         ->postJson('/api/v1/usuarios', [

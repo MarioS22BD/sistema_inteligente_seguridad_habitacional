@@ -5,6 +5,7 @@ import {
     BellRing,
     DoorClosed,
     DoorOpen,
+    Power,
     RefreshCw,
     ShieldAlert,
     ShieldCheck,
@@ -17,6 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { apiFetch } from '@/lib/apiFetch';
 import { dashboard } from '@/routes';
 
 defineOptions({
@@ -35,6 +37,8 @@ interface EstadoSistemaApi {
     esta_activado: boolean;
     puerta_abierta: boolean;
     movimiento_detectado: boolean;
+    modo_emergencia: boolean;
+    servicio_puerta_activo: boolean;
     estado: string;
     descripcion_ultima_alerta: string | null;
     fecha_ultima_alerta: string | null;
@@ -54,6 +58,8 @@ const page = usePage();
 const loading = ref(true);
 const isRefreshing = ref(false);
 const isSubmitting = ref(false);
+const isEmergencySubmitting = ref(false);
+const isServiceSubmitting = ref(false);
 const error = ref<string | null>(null);
 const estado = ref<EstadoSistemaApi | null>(null);
 const eventos = ref<EventoApi[]>([]);
@@ -155,7 +161,7 @@ const toggleSystem = async (): Promise<void> => {
 
     try {
         const nextActive = !estado.value.esta_activado;
-        const response = await fetch('/api/v1/seguridad/actualizar', {
+        const response = await apiFetch('/api/v1/seguridad/actualizar', {
             method: 'POST',
             headers: {
                 Accept: 'application/json',
@@ -182,6 +188,65 @@ const toggleSystem = async (): Promise<void> => {
         );
     } finally {
         isSubmitting.value = false;
+    }
+};
+
+const requestEmergencyOpen = async (): Promise<void> => {
+    if (!canControlSystem.value || isEmergencySubmitting.value) return;
+    isEmergencySubmitting.value = true;
+
+    try {
+        const response = await apiFetch('/api/v1/sistema/apertura-emergencia', {
+            method: 'POST',
+        });
+        if (!response.ok)
+            throw new Error('No se pudo solicitar la apertura de emergencia.');
+
+        const payload = (await response.json()) as { data?: EstadoSistemaApi };
+        if (payload.data) estado.value = payload.data;
+        await Promise.all([fetchEstado(), fetchEventos()]);
+        toast.success('Apertura de emergencia ejecutada.');
+    } catch (err) {
+        toast.error(
+            err instanceof Error
+                ? err.message
+                : 'Error en la apertura de emergencia.',
+        );
+    } finally {
+        isEmergencySubmitting.value = false;
+    }
+};
+
+const toggleDoorService = async (): Promise<void> => {
+    if (!canControlSystem.value || isServiceSubmitting.value) return;
+    isServiceSubmitting.value = true;
+
+    try {
+        const response = await apiFetch(
+            '/api/v1/sistema/toggle-servicio-puerta',
+            {
+                method: 'POST',
+            },
+        );
+        if (!response.ok)
+            throw new Error('No se pudo cambiar el servicio de puerta.');
+
+        const payload = (await response.json()) as { data?: EstadoSistemaApi };
+        if (payload.data) estado.value = payload.data;
+        await fetchEventos();
+        toast.success(
+            estado.value?.servicio_puerta_activo
+                ? 'Servicio de puerta activado.'
+                : 'Servicio de puerta detenido.',
+        );
+    } catch (err) {
+        toast.error(
+            err instanceof Error
+                ? err.message
+                : 'Error al cambiar el servicio de puerta.',
+        );
+    } finally {
+        isServiceSubmitting.value = false;
     }
 };
 
@@ -481,6 +546,82 @@ const severityClass = (gravedad: string): string => {
                 </CardContent>
             </Card>
         </div>
+
+        <Card
+            v-if="canControlSystem"
+            class="rounded-lg border border-red-200 bg-white shadow-sm"
+        >
+            <CardHeader class="pb-4">
+                <div class="flex items-start gap-3">
+                    <div
+                        class="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-red-200 bg-red-50 text-red-700"
+                    >
+                        <TriangleAlert class="h-5 w-5" />
+                    </div>
+                    <div>
+                        <CardTitle class="text-lg text-slate-900"
+                            >Acciones de Emergencia</CardTitle
+                        >
+                        <p class="mt-1 text-sm text-slate-500">
+                            Controles operativos de la puerta
+                        </p>
+                    </div>
+                </div>
+            </CardHeader>
+            <CardContent
+                class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+            >
+                <div class="flex flex-wrap gap-3">
+                    <Button
+                        variant="destructive"
+                        :disabled="isEmergencySubmitting || isServiceSubmitting"
+                        @click="requestEmergencyOpen"
+                    >
+                        <DoorOpen class="h-4 w-4" />
+                        {{
+                            isEmergencySubmitting
+                                ? 'Abriendo…'
+                                : 'Apertura de Emergencia'
+                        }}
+                    </Button>
+                    <Button
+                        :variant="
+                            estado?.servicio_puerta_activo
+                                ? 'outline'
+                                : 'default'
+                        "
+                        :disabled="isServiceSubmitting || isEmergencySubmitting"
+                        @click="toggleDoorService"
+                    >
+                        <Power
+                            :class="[
+                                'h-4 w-4',
+                                isServiceSubmitting && 'animate-pulse',
+                            ]"
+                        />
+                        {{
+                            isServiceSubmitting
+                                ? 'Actualizando…'
+                                : estado?.servicio_puerta_activo
+                                  ? 'Detener Servicio de Puerta'
+                                  : 'Activar Servicio de Puerta'
+                        }}
+                    </Button>
+                </div>
+                <div class="flex items-center gap-2 text-sm text-slate-600">
+                    <span
+                        :class="[
+                            'h-2.5 w-2.5 rounded-full',
+                            estado?.servicio_puerta_activo
+                                ? 'bg-emerald-500'
+                                : 'bg-red-500',
+                        ]"
+                    ></span>
+                    Servicio de puerta
+                    {{ estado?.servicio_puerta_activo ? 'activo' : 'detenido' }}
+                </div>
+            </CardContent>
+        </Card>
 
         <div
             class="grid min-w-0 gap-4 xl:grid-cols-[minmax(0,1.6fr)_minmax(300px,0.9fr)]"

@@ -8,6 +8,9 @@ Route::inertia('/', 'Welcome')->name('home');
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::inertia('dashboard', 'Dashboard')->name('dashboard');
     Route::inertia('alertas', 'Alertas')->name('alertas');
+    Route::inertia('usuarios', 'Usuarios/Index')
+        ->middleware('can:viewAny,App\\Models\\User')
+        ->name('usuarios.index');
     Route::inertia('configuracion', 'Configuracion')->name('configuracion');
 });
 

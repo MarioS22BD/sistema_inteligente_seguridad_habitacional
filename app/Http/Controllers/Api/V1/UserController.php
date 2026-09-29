@@ -51,6 +51,7 @@ class UserController extends Controller
         Gate::authorize('create', [User::class, $validated['rol']]);
 
         $user = User::query()->create($validated);
+        $user->forceFill(['email_verified_at' => now()])->save();
         $user->syncRoles($user->rol);
 
         return new UserResource($user);

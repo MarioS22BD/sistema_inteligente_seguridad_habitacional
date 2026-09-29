@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { Link } from '@inertiajs/vue3';
+import { Link, usePage } from '@inertiajs/vue3';
 import {
     Bell,
     LayoutDashboard,
     Settings,
     ShieldCheck,
     ShieldEllipsis,
+    Users,
 } from '@lucide/vue';
+import { computed } from 'vue';
 import NavMain from '@/components/NavMain.vue';
 import NavUser from '@/components/NavUser.vue';
 import {
@@ -21,7 +23,14 @@ import {
 import { dashboard } from '@/routes';
 import type { NavItem } from '@/types';
 
-const mainNavItems: NavItem[] = [
+const page = usePage();
+const userRole = computed(
+    () =>
+        (page.props.auth.user as { rol?: string } | null)?.rol?.toLowerCase() ??
+        'usuario',
+);
+
+const mainNavItems = computed<NavItem[]>(() => [
     {
         title: 'Inicio',
         href: dashboard(),
@@ -37,7 +46,10 @@ const mainNavItems: NavItem[] = [
         href: '/configuracion',
         icon: Settings,
     },
-];
+    ...(['administrador', 'empleado'].includes(userRole.value)
+        ? [{ title: 'Usuarios', href: '/usuarios', icon: Users }]
+        : []),
+]);
 </script>
 
 <template>

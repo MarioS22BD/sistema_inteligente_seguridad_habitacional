@@ -49,6 +49,12 @@ interface EventoApi {
     descripcion: string;
     gravedad: string;
     fecha_creacion: string | null;
+    usuario?: {
+        id: number;
+        name: string;
+        email: string;
+        rol: string;
+    } | null;
 }
 
 interface EventosApiPayload {
@@ -68,6 +74,7 @@ const eventos = ref<EventoApi[]>([]);
 const error = ref<string | null>(null);
 const searchTerm = ref('');
 const selectedSeverity = ref<GravedadFiltro>('todos');
+const selectedActor = ref('todos');
 const eventToDelete = ref<EventoApi | null>(null);
 const deleteDialogOpen = ref(false);
 const usuario = computed(() => page.props.auth.user as { rol?: string });
@@ -81,19 +88,38 @@ const filteredEvents = computed(() => {
     return eventos.value.filter((evento) => {
         const matchesSearch =
             !query ||
-            `${evento.tipo_evento} ${evento.descripcion}`
+            `${evento.tipo_evento} ${evento.descripcion} ${evento.usuario?.name ?? ''} ${evento.usuario?.email ?? ''} ${evento.usuario?.id ?? ''}`
                 .toLocaleLowerCase('es')
                 .includes(query);
         const matchesSeverity =
             selectedSeverity.value === 'todos' ||
             evento.gravedad === selectedSeverity.value;
+        const matchesActor =
+            selectedActor.value === 'todos' ||
+            (selectedActor.value === 'sistema'
+                ? !evento.usuario
+                : String(evento.usuario?.id ?? '') === selectedActor.value);
 
-        return matchesSearch && matchesSeverity;
+        return matchesSearch && matchesSeverity && matchesActor;
     });
 });
 
+const actors = computed(() => {
+    const uniqueActors = new Map<number, NonNullable<EventoApi['usuario']>>();
+    eventos.value.forEach((evento) => {
+        if (evento.usuario) uniqueActors.set(evento.usuario.id, evento.usuario);
+    });
+
+    return [...uniqueActors.values()].sort((first, second) =>
+        first.name.localeCompare(second.name, 'es'),
+    );
+});
+
 const hasActiveFilters = computed(
-    () => searchTerm.value.length > 0 || selectedSeverity.value !== 'todos',
+    () =>
+        searchTerm.value.length > 0 ||
+        selectedSeverity.value !== 'todos' ||
+        selectedActor.value !== 'todos',
 );
 
 const formatDate = (value: string | null | undefined) => {
@@ -174,6 +200,7 @@ const loadEvents = async (showFeedback = false): Promise<void> => {
 const clearFilters = (): void => {
     searchTerm.value = '';
     selectedSeverity.value = 'todos';
+    selectedActor.value = 'todos';
 };
 
 const requestDelete = (evento: EventoApi): void => {
@@ -275,8 +302,8 @@ onMounted(() => void loadEvents());
                         <Input
                             v-model="searchTerm"
                             type="search"
-                            placeholder="Buscar por tipo o descripción..."
-                            aria-label="Buscar eventos por tipo o descripción"
+                            placeholder="Buscar tipo, descripción o actor..."
+                            aria-label="Buscar eventos por tipo, descripción o actor"
                             class="h-10 border-slate-200 bg-white pl-9 text-slate-900 placeholder:text-slate-400"
                         />
                     </div>
@@ -284,6 +311,29 @@ onMounted(() => void loadEvents());
                     <div
                         class="flex flex-col gap-3 sm:flex-row sm:items-center"
                     >
+                        <Select v-model="selectedActor">
+                            <SelectTrigger
+                                class="h-10 w-full border-slate-200 bg-white text-slate-700 sm:w-56"
+                                aria-label="Filtrar eventos por usuario actor"
+                            >
+                                <SelectValue placeholder="Todos los actores" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="todos"
+                                    >Todos los actores</SelectItem
+                                >
+                                <SelectItem value="sistema"
+                                    >Dispositivo / sistema</SelectItem
+                                >
+                                <SelectItem
+                                    v-for="actor in actors"
+                                    :key="actor.id"
+                                    :value="String(actor.id)"
+                                >
+                                    {{ actor.name }} · #{{ actor.id }}
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
                         <Select v-model="selectedSeverity">
                             <SelectTrigger
                                 class="h-10 w-full border-slate-200 bg-white text-slate-700 sm:w-48"
@@ -421,6 +471,18 @@ onMounted(() => void loadEvents());
                                 <div
                                     class="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3"
                                 >
+                                    <div class="min-w-0 text-xs text-slate-500">
+                                        <span class="font-medium text-slate-700"
+                                            >Actor:</span
+                                        >
+                                        {{
+                                            evento.usuario?.name ??
+                                            'Dispositivo / sistema'
+                                        }}
+                                        <span v-if="evento.usuario" class="ml-1"
+                                            >· #{{ evento.usuario.id }}</span
+                                        >
+                                    </div>
                                     <Badge
                                         :class="[
                                             'border',
@@ -466,6 +528,12 @@ onMounted(() => void loadEvents());
                                         scope="col"
                                         class="px-4 py-3 font-medium"
                                     >
+                                        Usuario / Actor
+                                    </th>
+                                    <th
+                                        scope="col"
+                                        class="px-4 py-3 font-medium"
+                                    >
                                         Gravedad
                                     </th>
                                     <th
@@ -498,6 +566,22 @@ onMounted(() => void loadEvents());
                                         class="max-w-xl px-4 py-4 break-words text-slate-600"
                                     >
                                         {{ evento.descripcion }}
+                                    </td>
+                                    <td class="px-4 py-4 text-slate-700">
+                                        <div>
+                                            {{
+                                                evento.usuario?.name ??
+                                                'Dispositivo / sistema'
+                                            }}
+                                        </div>
+                                        <div
+                                            v-if="evento.usuario"
+                                            class="mt-0.5 text-xs text-slate-500"
+                                        >
+                                            {{ evento.usuario.email }} · #{{
+                                                evento.usuario.id
+                                            }}
+                                        </div>
                                     </td>
                                     <td class="px-4 py-4">
                                         <Badge

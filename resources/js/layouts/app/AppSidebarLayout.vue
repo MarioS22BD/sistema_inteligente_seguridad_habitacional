@@ -73,10 +73,13 @@ const checkCriticalEvents = async (): Promise<void> => {
             if (seenCriticalEventIds.has(evento.id)) return;
 
             seenCriticalEventIds.add(evento.id);
-            toast.error('Incidente crítico', {
-                description: `${evento.usuario?.name ?? 'Actor no registrado'} · ${evento.tipo_evento}: ${evento.descripcion}`,
-                duration: Infinity,
-            });
+            toast.error(
+                `Alerta crítica · Generada por: ${evento.usuario?.name ?? 'Actor no registrado'}`,
+                {
+                    description: `${evento.tipo_evento}: ${evento.descripcion}`,
+                    duration: Infinity,
+                },
+            );
         });
     } catch {
         // Keep the shell available when the event API is temporarily unreachable.
