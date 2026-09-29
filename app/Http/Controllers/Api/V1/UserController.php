@@ -7,6 +7,7 @@ use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 
@@ -97,7 +98,7 @@ class UserController extends Controller
         return new UserResource($usuario->refresh());
     }
 
-    public function destroy(User $usuario)
+    public function destroy(User $usuario): Response
     {
         Gate::authorize('delete', $usuario);
         $usuario->delete();
