@@ -15,6 +15,8 @@ class EstadoSistema extends Model
         'estado',
         'descripcion_ultima_alerta',
         'fecha_ultima_alerta',
+        'modo_emergencia',
+        'servicio_puerta_activo',
     ];
 
     protected function casts(): array
@@ -23,6 +25,8 @@ class EstadoSistema extends Model
             'esta_activado' => 'boolean',
             'puerta_abierta' => 'boolean',
             'movimiento_detectado' => 'boolean',
+            'modo_emergencia' => 'boolean',
+            'servicio_puerta_activo' => 'boolean',
             'fecha_ultima_alerta' => 'datetime',
         ];
     }

@@ -14,7 +14,8 @@ class EventoSeguridadPolicy
 
     public function view(User $user, EventoSeguridad $evento): bool
     {
-        return $user->can('ver_eventos');
+        return $user->can('ver_eventos')
+            && (! $user->esUsuario() || $evento->user_id === $user->id);
     }
 
     public function create(User $user): bool

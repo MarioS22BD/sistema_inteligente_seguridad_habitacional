@@ -57,13 +57,52 @@ it('crea un evento cuando el usuario tiene permiso para crear eventos', function
         ])
         ->assertStatus(201)
         ->assertJsonPath('data.tipo_evento', 'ALARMA_DISPARADA')
-        ->assertJsonPath('data.gravedad', 'critico');
+        ->assertJsonPath('data.gravedad', 'critico')
+        ->assertJsonPath('data.usuario.id', $usuario->id)
+        ->assertJsonPath('data.usuario.rol', 'empleado');
 
     $this->assertDatabaseHas('eventos_seguridad', [
         'tipo_evento' => 'ALARMA_DISPARADA',
         'descripcion' => 'Se disparó la alarma por movimiento detectado.',
         'gravedad' => 'critico',
     ]);
+});
+
+it('limits normal users to events attributed to their own account', function (): void {
+    $usuario = makeApiUserWithRole('usuario');
+    $otroUsuario = makeApiUserWithRole('usuario');
+
+    $personal = EventoSeguridad::query()->create([
+        'tipo_evento' => 'ALARMA_DISPARADA',
+        'descripcion' => 'Evento personal',
+        'gravedad' => 'critico',
+        'user_id' => $usuario->id,
+    ]);
+    EventoSeguridad::query()->create([
+        'tipo_evento' => 'ALARMA_DISPARADA',
+        'descripcion' => 'Evento de otra cuenta',
+        'gravedad' => 'critico',
+        'user_id' => $otroUsuario->id,
+    ]);
+
+    $this->actingAs($usuario, 'sanctum')
+        ->getJson('/api/v1/eventos')
+        ->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.id', $personal->id)
+        ->assertJsonPath('data.0.usuario.email', $usuario->email);
+
+    $this->actingAs($usuario, 'sanctum')
+        ->getJson('/api/v1/eventos/'.$personal->id)
+        ->assertOk();
+
+    $otroEvento = EventoSeguridad::query()
+        ->where('descripcion', 'Evento de otra cuenta')
+        ->firstOrFail();
+
+    $this->actingAs($usuario, 'sanctum')
+        ->getJson('/api/v1/eventos/'.$otroEvento->id)
+        ->assertForbidden();
 });
 
 it('rechaza la creación de eventos con datos inválidos', function (): void {

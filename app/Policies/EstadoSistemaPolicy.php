@@ -7,6 +7,11 @@ use App\Models\User;
 
 class EstadoSistemaPolicy
 {
+    public function operate(User $user): bool
+    {
+        return $user->esAdmin() || $user->esEmpleado();
+    }
+
     public function viewAny(User $user): bool
     {
         return $user->can('ver_estado_sistema');

@@ -24,6 +24,15 @@ class EventoSeguridadResource extends JsonResource
             'descripcion' => $this->descripcion,
             'gravedad' => $this->gravedad,
             'fecha_creacion' => $this->created_at?->toISOString(),
+            'usuario' => $this->when(
+                $this->user_id !== null && $this->relationLoaded('user'),
+                fn (): ?array => $this->user === null ? null : [
+                    'id' => $this->user->id,
+                    'name' => $this->user->name,
+                    'email' => $this->user->email,
+                    'rol' => $this->user->rol,
+                ],
+            ),
         ];
     }
 }

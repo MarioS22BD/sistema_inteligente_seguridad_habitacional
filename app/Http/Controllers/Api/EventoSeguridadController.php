@@ -9,25 +9,32 @@ use App\Http\Resources\EventoSeguridadCollection;
 use App\Http\Resources\EventoSeguridadResource;
 use App\Models\EventoSeguridad;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Gate;
 
 class EventoSeguridadController extends Controller
 {
-    public function index(): EventoSeguridadCollection
+    public function index(Request $request): EventoSeguridadCollection
     {
         Gate::authorize('viewAny', EventoSeguridad::class);
 
-        return new EventoSeguridadCollection(EventoSeguridad::recientes()->paginate(15));
+        $eventos = EventoSeguridad::query()->with('user')->recientes();
+
+        if ($request->user()->esUsuario()) {
+            $eventos->where('user_id', $request->user()->id);
+        }
+
+        return new EventoSeguridadCollection($eventos->paginate(15));
     }
 
     public function store(StoreEventoSeguridadRequest $request): JsonResponse
     {
         Gate::authorize('create', EventoSeguridad::class);
 
-        $evento = EventoSeguridad::create($request->validated());
+        $evento = $request->user()->eventos()->create($request->validated());
 
-        return (new EventoSeguridadResource($evento))
+        return (new EventoSeguridadResource($evento->load('user')))
             ->response()
             ->setStatusCode(201);
     }
@@ -36,7 +43,7 @@ class EventoSeguridadController extends Controller
     {
         Gate::authorize('view', $evento);
 
-        return new EventoSeguridadResource($evento);
+        return new EventoSeguridadResource($evento->load('user'));
     }
 
     public function update(
@@ -47,7 +54,7 @@ class EventoSeguridadController extends Controller
 
         $evento->update($request->validated());
 
-        return new EventoSeguridadResource($evento->refresh());
+        return new EventoSeguridadResource($evento->refresh()->load('user'));
     }
 
     public function destroy(EventoSeguridad $evento): Response
