@@ -34,9 +34,7 @@ const page = usePage();
 const role = computed(
     () =>
         (
-            page.props.auth.user as
-                | { rol?: string }
-                | undefined
+            page.props.auth.user as { rol?: string } | undefined
         )?.rol?.toLowerCase() ?? 'usuario',
 );
 const canReceiveCriticalAlerts = computed(() =>
