@@ -57,7 +57,7 @@ it('allows administrators to create users with any role', function (): void {
         ->where('email', 'nuevo.admin@seguridad.test')
         ->firstOrFail();
 
-    expect($createdUser->hasVerifiedEmail())->toBeTrue();
+    expect($createdUser->email_verified_at)->not->toBeNull();
 
     $this->actingAs($createdUser)
         ->get('/dashboard')
@@ -80,7 +80,7 @@ it('allows employees to create normal users but not privileged roles', function 
         ->where('email', 'nuevo.usuario@seguridad.test')
         ->firstOrFail();
 
-    expect($createdUser->hasVerifiedEmail())->toBeTrue();
+    expect($createdUser->email_verified_at)->not->toBeNull();
 
     $this->actingAs($createdUser)
         ->get('/dashboard')

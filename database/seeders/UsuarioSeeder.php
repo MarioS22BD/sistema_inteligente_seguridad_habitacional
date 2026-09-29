@@ -41,7 +41,7 @@ class UsuarioSeeder extends Seeder
                 ],
             );
 
-            if (! $cuenta->hasVerifiedEmail()) {
+            if ($cuenta->email_verified_at === null) {
                 $cuenta->forceFill(['email_verified_at' => now()])->save();
             }
         }
