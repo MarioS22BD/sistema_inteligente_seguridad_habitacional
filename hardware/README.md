@@ -12,10 +12,10 @@ Este directorio reúne los sketches de referencia para los tres dispositivos del
 
 - La cámara ESP32-CAM mantiene la transmisión MJPEG en puerto 81 con el endpoint `/stream`.
 - El Arduino Uno conserva el protocolo serial legado:
-  - `p`: tecla presionada
-  - `c`: borrar clave
-  - `T`: clave correcta
-  - `X`: clave incorrecta
+    - `p`: tecla presionada
+    - `c`: borrar clave
+    - `T`: clave correcta
+    - `X`: clave incorrecta
 - El ESP8266 conserva la lógica del servomotor de la puerta, el LED verde, el LED rojo, el LED blanco y el sensor HC-SR04 como sensor de proximidad/distancia, no como detector PIR.
 - Se elimina el control del servomotor de la ventana, como exige la arquitectura de SISH.
 - La contraseña del ejemplo se mantiene solo como referencia y debe cambiarse en cada instalación real.
