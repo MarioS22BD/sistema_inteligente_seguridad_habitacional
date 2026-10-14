@@ -3,28 +3,30 @@
 namespace App\Http\Middleware;
 
 use Closure;
+use App\Models\IotDevice;
 use Illuminate\Http\Request;
 
 class VerifyDeviceToken
 {
     public function handle(Request $request, Closure $next): mixed
     {
-        $tokenHeader = $request->header('X-Device-Token');
-        $bearerToken = null;
+        $token = $request->header('X-Device-Token');
 
-        if ($request->hasHeader('Authorization')) {
-            $authorization = trim((string) $request->header('Authorization'));
-            if (str_starts_with(strtolower($authorization), 'bearer ')) {
-                $bearerToken = trim(substr($authorization, 7));
-            }
+        if (! is_string($token) || $token === '') {
+            abort(401, 'Credencial de dispositivo ausente o inválida.');
         }
 
-        $suppliedToken = $tokenHeader ?: ($bearerToken ?: $request->query('token'));
-        $expectedToken = (string) config('device.api_token', '');
+        $tokenHash = hash('sha256', $token);
+        $device = IotDevice::query()
+            ->where('api_token_hash', $tokenHash)
+            ->where('is_active', true)
+            ->first();
 
-        if ($expectedToken === '' || $suppliedToken === null || ! hash_equals($expectedToken, (string) $suppliedToken)) {
-            abort(401, 'Token de dispositivo inválido o faltante.');
+        if (! $device || ! hash_equals($device->api_token_hash, $tokenHash)) {
+            abort(401, 'Credencial de dispositivo ausente o inválida.');
         }
+
+        $request->attributes->set('iot_device', $device);
 
         return $next($request);
     }

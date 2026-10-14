@@ -8,29 +8,22 @@ class UserPolicy
 {
     public function viewAny(User $actor): bool
     {
-        return $actor->esAdmin() || $actor->esEmpleado();
+        return $actor->esAdmin();
     }
 
     public function view(User $actor, User $target): bool
     {
-        return $actor->esAdmin()
-            || ($actor->esEmpleado() && $target->esUsuario());
+        return $actor->esAdmin();
     }
 
     public function create(User $actor, ?string $rol = null): bool
     {
-        return $actor->esAdmin()
-            || ($actor->esEmpleado() && $rol === 'usuario');
+        return $actor->esAdmin();
     }
 
     public function update(User $actor, User $target, ?string $nuevoRol = null): bool
     {
-        return $actor->esAdmin()
-            || (
-                $actor->esEmpleado()
-                && $target->esUsuario()
-                && ($nuevoRol === null || $nuevoRol === 'usuario')
-            );
+        return $actor->esAdmin();
     }
 
     public function delete(User $actor, User $target): bool

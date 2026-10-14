@@ -37,9 +37,7 @@ const role = computed(
             page.props.auth.user as { rol?: string } | undefined
         )?.rol?.toLowerCase() ?? 'usuario',
 );
-const canReceiveCriticalAlerts = computed(() =>
-    ['administrador', 'empleado'].includes(role.value),
-);
+const canReceiveCriticalAlerts = computed(() => role.value === 'administrador');
 const seenCriticalEventIds = new Set<number>();
 let hasLoadedInitialEvents = false;
 let checkingEvents = false;

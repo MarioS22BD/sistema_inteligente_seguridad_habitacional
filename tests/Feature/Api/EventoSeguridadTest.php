@@ -1,236 +1,67 @@
 <?php
 
 use App\Models\EventoSeguridad;
-use App\Models\User;
 
 beforeEach(fn () => seedApiRolesAndPermissions());
 
-it('requiere autenticación para consultar el listado de eventos', function (): void {
-    $this->getJson('/api/v1/eventos')
-        ->assertStatus(401);
+it('requires authentication to read security events', function (): void {
+    $this->getJson('/api/v1/eventos')->assertUnauthorized();
 });
 
-it('devuelve el listado de eventos para usuarios con permiso de lectura', function (): void {
-    $usuario = makeApiUserWithRole('empleado');
-    EventoSeguridad::query()->insert([
-        [
-            'tipo_evento' => 'PUERTA_ABIERTA',
-            'descripcion' => 'La puerta fue abierta.',
-            'gravedad' => 'advertencia',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ],
-        [
-            'tipo_evento' => 'MOVIMIENTO_DETECTADO',
-            'descripcion' => 'Se detectó movimiento.',
-            'gravedad' => 'advertencia',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ],
+it('allows a normal user to read all security events but not modify them', function (): void {
+    $user = makeApiUserWithRole('usuario');
+    $event = EventoSeguridad::query()->create([
+        'tipo_evento' => 'PUERTA_ABIERTA',
+        'descripcion' => 'Evento de seguridad',
+        'gravedad' => 'advertencia',
     ]);
 
-    $this->actingAs($usuario, 'sanctum')
+    $this->actingAs($user, 'sanctum')
         ->getJson('/api/v1/eventos')
         ->assertOk()
-        ->assertJsonStructure([
-            'data' => [
-                '*' => [
-                    'id',
-                    'tipo_evento',
-                    'descripcion',
-                    'gravedad',
-                    'fecha_creacion',
-                ],
-            ],
-        ])
-        ->assertJsonCount(2, 'data');
-});
+        ->assertJsonPath('data.0.id', $event->id);
 
-it('crea un evento cuando el usuario tiene permiso para crear eventos', function (): void {
-    $usuario = makeApiUserWithRole('empleado');
-
-    $this->actingAs($usuario, 'sanctum')
+    $this->actingAs($user, 'sanctum')
         ->postJson('/api/v1/eventos', [
-            'tipo_evento' => 'ALARMA_DISPARADA',
-            'descripcion' => 'Se disparó la alarma por movimiento detectado.',
-            'gravedad' => 'critico',
+            'tipo_evento' => 'PRUEBA',
+            'descripcion' => 'No permitido',
+            'gravedad' => 'informativo',
         ])
-        ->assertStatus(201)
-        ->assertJsonPath('data.tipo_evento', 'ALARMA_DISPARADA')
-        ->assertJsonPath('data.gravedad', 'critico')
-        ->assertJsonPath('data.usuario.id', $usuario->id)
-        ->assertJsonPath('data.usuario.rol', 'empleado');
+        ->assertForbidden();
 
-    $this->assertDatabaseHas('eventos_seguridad', [
-        'tipo_evento' => 'ALARMA_DISPARADA',
-        'descripcion' => 'Se disparó la alarma por movimiento detectado.',
-        'gravedad' => 'critico',
-    ]);
-});
-
-it('limits normal users to events attributed to their own account', function (): void {
-    $usuario = makeApiUserWithRole('usuario');
-    $otroUsuario = makeApiUserWithRole('usuario');
-
-    $personal = EventoSeguridad::query()->create([
-        'tipo_evento' => 'ALARMA_DISPARADA',
-        'descripcion' => 'Evento personal',
-        'gravedad' => 'critico',
-        'user_id' => $usuario->id,
-    ]);
-    EventoSeguridad::query()->create([
-        'tipo_evento' => 'ALARMA_DISPARADA',
-        'descripcion' => 'Evento de otra cuenta',
-        'gravedad' => 'critico',
-        'user_id' => $otroUsuario->id,
-    ]);
-
-    $this->actingAs($usuario, 'sanctum')
-        ->getJson('/api/v1/eventos')
-        ->assertOk()
-        ->assertJsonCount(1, 'data')
-        ->assertJsonPath('data.0.id', $personal->id)
-        ->assertJsonPath('data.0.usuario.email', $usuario->email);
-
-    $this->actingAs($usuario, 'sanctum')
-        ->getJson('/api/v1/eventos/'.$personal->id)
-        ->assertOk();
-
-    $otroEvento = EventoSeguridad::query()
-        ->where('descripcion', 'Evento de otra cuenta')
-        ->firstOrFail();
-
-    $this->actingAs($usuario, 'sanctum')
-        ->getJson('/api/v1/eventos/'.$otroEvento->id)
+    $this->actingAs($user, 'sanctum')
+        ->putJson('/api/v1/eventos/'.$event->id, ['descripcion' => 'No permitido'])
         ->assertForbidden();
 });
 
-it('rechaza la creación de eventos con datos inválidos', function (): void {
-    $usuario = makeApiUserWithRole('empleado');
+it('allows administrators to create, update, and delete events', function (): void {
+    $admin = makeApiUserWithRole('administrador');
 
-    $this->actingAs($usuario, 'sanctum')
+    $created = $this->actingAs($admin, 'sanctum')
         ->postJson('/api/v1/eventos', [
             'tipo_evento' => 'ALARMA_DISPARADA',
+            'descripcion' => 'Alarma reportada por administración.',
+            'gravedad' => 'critico',
         ])
-        ->assertStatus(422)
+        ->assertCreated()
+        ->assertJsonPath('data.usuario.id', $admin->id);
+
+    $eventId = $created->json('data.id');
+    $this->actingAs($admin, 'sanctum')
+        ->putJson('/api/v1/eventos/'.$eventId, ['descripcion' => 'Actualizado'])
+        ->assertOk()
+        ->assertJsonPath('data.descripcion', 'Actualizado');
+
+    $this->actingAs($admin, 'sanctum')
+        ->deleteJson('/api/v1/eventos/'.$eventId)
+        ->assertNoContent();
+});
+
+it('rejects invalid event creation data for administrators', function (): void {
+    $admin = makeApiUserWithRole('administrador');
+
+    $this->actingAs($admin, 'sanctum')
+        ->postJson('/api/v1/eventos', ['tipo_evento' => 'ALARMA_DISPARADA'])
+        ->assertUnprocessable()
         ->assertJsonValidationErrors(['descripcion', 'gravedad']);
-});
-
-it('actualiza un evento cuando el usuario tiene permiso para editar', function (): void {
-    $usuario = makeApiUserWithRole('administrador');
-    $evento = EventoSeguridad::query()->create([
-        'tipo_evento' => 'PUERTA_ABIERTA',
-        'descripcion' => 'Original',
-        'gravedad' => 'advertencia',
-    ]);
-
-    $this->actingAs($usuario, 'sanctum')
-        ->putJson('/api/v1/eventos/'.$evento->id, [
-            'descripcion' => 'Modificado por administración',
-            'gravedad' => 'critico',
-        ])
-        ->assertOk()
-        ->assertJsonPath('data.descripcion', 'Modificado por administración')
-        ->assertJsonPath('data.gravedad', 'critico');
-
-    $this->assertDatabaseHas('eventos_seguridad', [
-        'id' => $evento->id,
-        'descripcion' => 'Modificado por administración',
-        'gravedad' => 'critico',
-    ]);
-});
-
-it('elimina un evento cuando el usuario tiene permiso para borrar', function (): void {
-    $usuario = makeApiUserWithRole('administrador');
-    $evento = EventoSeguridad::query()->create([
-        'tipo_evento' => 'MOVIMIENTO_DETECTADO',
-        'descripcion' => 'Eliminar evento',
-        'gravedad' => 'informativo',
-    ]);
-
-    $this->actingAs($usuario, 'sanctum')
-        ->deleteJson('/api/v1/eventos/'.$evento->id)
-        ->assertNoContent();
-
-    $this->assertDatabaseMissing('eventos_seguridad', [
-        'id' => $evento->id,
-    ]);
-});
-
-it('aplica la matriz de permisos por roles para eventos', function (): void {
-    $administrador = makeApiUserWithRole('administrador');
-    $empleado = makeApiUserWithRole('empleado');
-    $usuario = makeApiUserWithRole('usuario');
-    $sinPermiso = User::factory()->create(['rol' => 'usuario']);
-
-    $eventoAdmin = EventoSeguridad::query()->create([
-        'tipo_evento' => 'PUERTA_ABIERTA',
-        'descripcion' => 'Evento para probar permisos de administrador',
-        'gravedad' => 'advertencia',
-    ]);
-    $eventoEmpleado = EventoSeguridad::query()->create([
-        'tipo_evento' => 'PUERTA_ABIERTA',
-        'descripcion' => 'Evento para probar permisos de empleado',
-        'gravedad' => 'advertencia',
-    ]);
-    $eventoUsuario = EventoSeguridad::query()->create([
-        'tipo_evento' => 'PUERTA_ABIERTA',
-        'descripcion' => 'Evento para probar permisos de usuario',
-        'gravedad' => 'advertencia',
-    ]);
-
-    $this->actingAs($administrador, 'sanctum')
-        ->getJson('/api/v1/eventos')
-        ->assertOk();
-    $this->actingAs($administrador, 'sanctum')
-        ->postJson('/api/v1/eventos', [
-            'tipo_evento' => 'MOVIMIENTO_DETECTADO',
-            'descripcion' => 'Evento admin',
-            'gravedad' => 'advertencia',
-        ])
-        ->assertStatus(201);
-    $this->actingAs($administrador, 'sanctum')
-        ->putJson('/api/v1/eventos/'.$eventoAdmin->id, ['descripcion' => 'Actualizado admin'])
-        ->assertOk();
-    $this->actingAs($administrador, 'sanctum')
-        ->deleteJson('/api/v1/eventos/'.$eventoAdmin->id)
-        ->assertNoContent();
-
-    $this->actingAs($empleado, 'sanctum')
-        ->getJson('/api/v1/eventos')
-        ->assertOk();
-    $this->actingAs($empleado, 'sanctum')
-        ->postJson('/api/v1/eventos', [
-            'tipo_evento' => 'MOVIMIENTO_DETECTADO',
-            'descripcion' => 'Evento empleado',
-            'gravedad' => 'informativo',
-        ])
-        ->assertStatus(201);
-    $this->actingAs($empleado, 'sanctum')
-        ->putJson('/api/v1/eventos/'.$eventoEmpleado->id, ['descripcion' => 'Actualizado empleado'])
-        ->assertForbidden();
-    $this->actingAs($empleado, 'sanctum')
-        ->deleteJson('/api/v1/eventos/'.$eventoEmpleado->id)
-        ->assertForbidden();
-
-    $this->actingAs($usuario, 'sanctum')
-        ->getJson('/api/v1/eventos')
-        ->assertOk();
-    $this->actingAs($usuario, 'sanctum')
-        ->postJson('/api/v1/eventos', [
-            'tipo_evento' => 'MOVIMIENTO_DETECTADO',
-            'descripcion' => 'Evento usuario',
-            'gravedad' => 'informativo',
-        ])
-        ->assertForbidden();
-    $this->actingAs($usuario, 'sanctum')
-        ->putJson('/api/v1/eventos/'.$eventoUsuario->id, ['descripcion' => 'Actualizado usuario'])
-        ->assertForbidden();
-    $this->actingAs($usuario, 'sanctum')
-        ->deleteJson('/api/v1/eventos/'.$eventoUsuario->id)
-        ->assertForbidden();
-
-    $this->actingAs($sinPermiso, 'sanctum')
-        ->getJson('/api/v1/eventos')
-        ->assertForbidden();
 });

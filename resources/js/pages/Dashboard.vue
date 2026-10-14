@@ -18,6 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import DashboardCamera from '@/components/DashboardCamera.vue';
 import { apiFetch } from '@/lib/apiFetch';
 import { dashboard } from '@/routes';
 
@@ -39,11 +40,34 @@ interface EstadoSistemaApi {
     movimiento_detectado: boolean;
     modo_emergencia: boolean;
     servicio_puerta_activo: boolean;
+    distancia_cm: string | null;
     estado: string;
     descripcion_ultima_alerta: string | null;
     fecha_ultima_alerta: string | null;
     created_at: string | null;
     updated_at: string | null;
+}
+
+interface DeviceStatusApi {
+    name: string;
+    configured: boolean;
+    connected: boolean;
+    last_seen_at: string | null;
+}
+
+interface DeviceCommandApi {
+    id: string;
+    action: string;
+    status: string;
+    expires_at: string;
+    claimed_at: string | null;
+    confirmed_at: string | null;
+    error: string | null;
+    result: {
+        servo_comandado?: boolean;
+        puerta_abierta_reportada?: boolean;
+        confirmacion_fisica?: boolean;
+    } | null;
 }
 
 interface EventoApi {
@@ -62,14 +86,16 @@ const isEmergencySubmitting = ref(false);
 const isServiceSubmitting = ref(false);
 const error = ref<string | null>(null);
 const estado = ref<EstadoSistemaApi | null>(null);
+const deviceStatus = ref<DeviceStatusApi | null>(null);
+const latestCommand = ref<DeviceCommandApi | null>(null);
+const emergencyIdempotencyKey = ref<string | null>(null);
+const dashboardMounted = ref(true);
 const eventos = ref<EventoApi[]>([]);
 const usuario = computed(
     () => page.props.auth.user as { name?: string; rol?: string },
 );
 const userRole = computed(() => usuario.value?.rol?.toLowerCase() ?? 'usuario');
-const canControlSystem = computed(() =>
-    ['administrador', 'empleado'].includes(userRole.value),
-);
+const canControlSystem = computed(() => userRole.value === 'administrador');
 
 const formatDate = (value: string | null | undefined) => {
     if (!value) return 'Sin información disponible';
@@ -135,11 +161,47 @@ const fetchEventos = async (): Promise<void> => {
     }
 };
 
+const fetchDeviceStatus = async (): Promise<void> => {
+    try {
+        const response = await fetch('/api/v1/dispositivos/esp8266', {
+            headers: { Accept: 'application/json' },
+        });
+        if (!response.ok) throw new Error('No se pudo consultar el ESP8266.');
+
+        const payload = (await response.json()) as { data?: DeviceStatusApi };
+        deviceStatus.value = payload.data ?? null;
+    } catch {
+        deviceStatus.value = null;
+    }
+};
+
+const fetchLatestCommand = async (): Promise<void> => {
+    try {
+        const response = await fetch('/api/v1/sistema/ordenes', {
+            headers: { Accept: 'application/json' },
+        });
+        if (!response.ok)
+            throw new Error('No se pudieron consultar las órdenes.');
+
+        const payload = (await response.json()) as {
+            data?: DeviceCommandApi[];
+        };
+        latestCommand.value = payload.data?.[0] ?? null;
+    } catch {
+        latestCommand.value = null;
+    }
+};
+
 const refreshDashboard = async (): Promise<void> => {
     if (isRefreshing.value) return;
 
     isRefreshing.value = true;
-    await Promise.all([fetchEstado(), fetchEventos()]);
+    await Promise.all([
+        fetchEstado(),
+        fetchEventos(),
+        fetchDeviceStatus(),
+        fetchLatestCommand(),
+    ]);
     isRefreshing.value = false;
     loading.value = false;
 };
@@ -152,7 +214,10 @@ onMounted(() => {
     void refreshDashboard();
 });
 
-onUnmounted(() => pause());
+onUnmounted(() => {
+    dashboardMounted.value = false;
+    pause();
+});
 
 const toggleSystem = async (): Promise<void> => {
     if (!canControlSystem.value || !estado.value || isSubmitting.value) return;
@@ -161,17 +226,13 @@ const toggleSystem = async (): Promise<void> => {
 
     try {
         const nextActive = !estado.value.esta_activado;
-        const response = await apiFetch('/api/v1/seguridad/actualizar', {
-            method: 'POST',
+        const response = await apiFetch('/api/v1/sistema/armado', {
+            method: 'PUT',
             headers: {
                 Accept: 'application/json',
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                esta_activado: nextActive,
-                puerta_abierta: estado.value.puerta_abierta,
-                movimiento_detectado: estado.value.movimiento_detectado,
-            }),
+            body: JSON.stringify({ esta_activado: nextActive }),
         });
 
         if (!response.ok) {
@@ -196,16 +257,22 @@ const requestEmergencyOpen = async (): Promise<void> => {
     isEmergencySubmitting.value = true;
 
     try {
+        emergencyIdempotencyKey.value ??= crypto.randomUUID();
         const response = await apiFetch('/api/v1/sistema/apertura-emergencia', {
             method: 'POST',
+            headers: { 'Idempotency-Key': emergencyIdempotencyKey.value },
         });
         if (!response.ok)
             throw new Error('No se pudo solicitar la apertura de emergencia.');
 
-        const payload = (await response.json()) as { data?: EstadoSistemaApi };
-        if (payload.data) estado.value = payload.data;
-        await Promise.all([fetchEstado(), fetchEventos()]);
-        toast.success('Apertura de emergencia ejecutada.');
+        const payload = (await response.json()) as { data?: DeviceCommandApi };
+        emergencyIdempotencyKey.value = null;
+        if (!payload.data)
+            throw new Error('Laravel no devolvió la orden creada.');
+
+        latestCommand.value = payload.data;
+        toast.success('Solicitud aceptada; la puerta aún no está confirmada.');
+        void pollCommand(payload.data.id);
     } catch (err) {
         toast.error(
             err instanceof Error
@@ -214,6 +281,67 @@ const requestEmergencyOpen = async (): Promise<void> => {
         );
     } finally {
         isEmergencySubmitting.value = false;
+    }
+};
+
+const pollCommand = async (id: string): Promise<void> => {
+    const deadline = Date.now() + 30_000;
+
+    while (dashboardMounted.value && Date.now() < deadline) {
+        await new Promise((resolve) => window.setTimeout(resolve, 2000));
+        if (!dashboardMounted.value) return;
+
+        try {
+            const response = await fetch(`/api/v1/sistema/ordenes/${id}`, {
+                headers: { Accept: 'application/json' },
+            });
+            if (!response.ok)
+                throw new Error(
+                    'No se pudo consultar el resultado de la orden.',
+                );
+
+            const payload = (await response.json()) as {
+                data?: DeviceCommandApi;
+            };
+            if (!payload.data) return;
+            latestCommand.value = payload.data;
+
+            if (payload.data.status === 'ejecutada') {
+                toast.success(
+                    'El ESP8266 confirmó el comando del servo; la posición física no está comprobada.',
+                );
+                await Promise.all([fetchEstado(), fetchEventos()]);
+                return;
+            }
+            if (payload.data.status === 'fallida') {
+                toast.error(
+                    payload.data.error ?? 'El ESP8266 informó un fallo.',
+                );
+                return;
+            }
+            if (
+                payload.data.status === 'expirada' ||
+                payload.data.status === 'cancelada'
+            ) {
+                toast.error(
+                    'La orden expiró o fue cancelada sin confirmación.',
+                );
+                return;
+            }
+        } catch (err) {
+            toast.error(
+                err instanceof Error
+                    ? err.message
+                    : 'Error consultando la orden.',
+            );
+            return;
+        }
+    }
+
+    if (dashboardMounted.value && latestCommand.value?.id === id) {
+        toast.error(
+            'Sin confirmación del ESP8266; el resultado de la orden es incierto.',
+        );
     }
 };
 
@@ -463,9 +591,17 @@ const severityClass = (gravedad: string): string => {
                                 : 'text-emerald-700',
                         ]"
                     >
-                        {{ estado?.puerta_abierta ? 'ABIERTA' : 'CERRADA' }}
+                        {{
+                            !deviceStatus?.connected
+                                ? 'DATO ANTIGUO'
+                                : estado?.puerta_abierta
+                                  ? 'ABIERTA (REPORTADA)'
+                                  : 'CERRADA (REPORTADA)'
+                        }}
                     </div>
-                    <p class="mt-2 text-sm text-slate-500">Sensor de acceso</p>
+                    <p class="mt-2 text-sm text-slate-500">
+                        Estado lógico; sin sensor físico de posición
+                    </p>
                 </CardContent>
             </Card>
 
@@ -475,12 +611,13 @@ const severityClass = (gravedad: string): string => {
                 <CardHeader class="pb-3">
                     <div class="flex items-center justify-between gap-2">
                         <CardTitle class="text-sm font-medium text-slate-500"
-                            >Movimiento</CardTitle
+                            >Proximidad</CardTitle
                         >
                         <Activity
                             :class="[
                                 'h-5 w-5',
-                                estado?.movimiento_detectado
+                                estado?.movimiento_detectado &&
+                                deviceStatus?.connected
                                     ? 'text-amber-600'
                                     : 'text-emerald-600',
                             ]"
@@ -497,13 +634,15 @@ const severityClass = (gravedad: string): string => {
                         ]"
                     >
                         {{
-                            estado?.movimiento_detectado
-                                ? 'DETECTADO'
-                                : 'NO DETECTADO'
+                            !deviceStatus?.connected
+                                ? 'DATO ANTIGUO'
+                                : estado?.movimiento_detectado
+                                  ? 'DETECTADO'
+                                  : 'NO DETECTADO'
                         }}
                     </div>
                     <p class="mt-2 text-sm text-slate-500">
-                        Sensor de presencia
+                        HC-SR04 · distancia/proximidad (no PIR)
                     </p>
                 </CardContent>
             </Card>
@@ -547,6 +686,39 @@ const severityClass = (gravedad: string): string => {
             </Card>
         </div>
 
+        <div
+            :class="[
+                'flex flex-col gap-2 rounded-lg border p-4 text-sm sm:flex-row sm:items-center sm:justify-between',
+                deviceStatus?.connected
+                    ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                    : 'border-amber-300 bg-amber-50 text-amber-900',
+            ]"
+            role="status"
+        >
+            <span>
+                ESP8266:
+                {{
+                    deviceStatus?.connected
+                        ? 'conectado'
+                        : 'desconectado o sin heartbeat reciente'
+                }}.
+                {{
+                    deviceStatus?.connected
+                        ? 'Última comunicación:'
+                        : 'El estado puede estar desactualizado. Última comunicación:'
+                }}
+                {{ formatDate(deviceStatus?.last_seen_at) }}
+            </span>
+            <span
+                v-if="
+                    estado?.distancia_cm !== null &&
+                    estado?.distancia_cm !== undefined
+                "
+            >
+                Distancia HC-SR04: {{ estado.distancia_cm }} cm
+            </span>
+        </div>
+
         <Card
             v-if="canControlSystem"
             class="rounded-lg border border-red-200 bg-white shadow-sm"
@@ -580,7 +752,7 @@ const severityClass = (gravedad: string): string => {
                         <DoorOpen class="h-4 w-4" />
                         {{
                             isEmergencySubmitting
-                                ? 'Abriendo…'
+                                ? 'Solicitando…'
                                 : 'Apertura de Emergencia'
                         }}
                     </Button>
@@ -622,6 +794,27 @@ const severityClass = (gravedad: string): string => {
                 </div>
             </CardContent>
         </Card>
+
+        <div
+            v-if="latestCommand"
+            class="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900"
+            role="status"
+        >
+            Orden {{ latestCommand.id }} · {{ latestCommand.action }} ·
+            <strong>{{ latestCommand.status }}</strong>
+            <span v-if="latestCommand.claimed_at">
+                · Reclamada {{ formatDate(latestCommand.claimed_at) }}
+            </span>
+            <span v-if="latestCommand.confirmed_at">
+                · Confirmada {{ formatDate(latestCommand.confirmed_at) }}
+            </span>
+            <span v-if="latestCommand.error"> · {{ latestCommand.error }}</span>
+            <span v-if="latestCommand.status === 'ejecutada'">
+                · Confirmación electrónica; posición física no verificada
+            </span>
+        </div>
+
+        <DashboardCamera />
 
         <div
             class="grid min-w-0 gap-4 xl:grid-cols-[minmax(0,1.6fr)_minmax(300px,0.9fr)]"

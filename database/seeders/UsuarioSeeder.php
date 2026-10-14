@@ -20,11 +20,6 @@ class UsuarioSeeder extends Seeder
                 'rol' => 'administrador',
             ],
             [
-                'name' => 'Empleado',
-                'email' => 'empleado@seguridad.local',
-                'rol' => 'empleado',
-            ],
-            [
                 'name' => 'Usuario',
                 'email' => 'usuario@seguridad.local',
                 'rol' => 'usuario',
@@ -32,7 +27,7 @@ class UsuarioSeeder extends Seeder
         ];
 
         foreach ($usuarios as $usuario) {
-            $cuenta = User::updateOrCreate(
+            $cuenta = User::firstOrCreate(
                 ['email' => $usuario['email']],
                 [
                     'name' => $usuario['name'],
@@ -41,7 +36,7 @@ class UsuarioSeeder extends Seeder
                 ],
             );
 
-            if ($cuenta->email_verified_at === null) {
+            if ($cuenta->wasRecentlyCreated && $cuenta->email_verified_at === null) {
                 $cuenta->forceFill(['email_verified_at' => now()])->save();
             }
         }

@@ -21,10 +21,6 @@ class EventoSeguridadController extends Controller
 
         $eventos = EventoSeguridad::query()->with('user')->recientes();
 
-        if ($request->user()->esUsuario()) {
-            $eventos->where('user_id', $request->user()->id);
-        }
-
         return new EventoSeguridadCollection($eventos->paginate(15));
     }
 

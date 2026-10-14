@@ -49,7 +49,7 @@ interface UsuarioApi {
     id: number;
     name: string;
     email: string;
-    rol: 'administrador' | 'empleado' | 'usuario';
+    rol: 'administrador' | 'usuario';
     created_at: string | null;
 }
 
@@ -64,9 +64,7 @@ const currentUser = computed(
 );
 const role = computed(() => currentUser.value?.rol?.toLowerCase() ?? 'usuario');
 const isAdmin = computed(() => role.value === 'administrador');
-const canManageUsers = computed(() =>
-    ['administrador', 'empleado'].includes(role.value),
-);
+const canManageUsers = computed(() => role.value === 'administrador');
 const loading = ref(true);
 const refreshing = ref(false);
 const submitting = ref(false);
@@ -112,8 +110,6 @@ const formatDate = (value: string | null): string => {
 const roleTone = (value: UsuarioApi['rol']): string => {
     if (value === 'administrador')
         return 'border-blue-300 bg-blue-50 text-blue-700';
-    if (value === 'empleado')
-        return 'border-amber-300 bg-amber-50 text-amber-800';
     return 'border-slate-300 bg-slate-100 text-slate-700';
 };
 
@@ -608,9 +604,6 @@ onMounted(() => {
                             /></SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="usuario">Usuario</SelectItem>
-                                <SelectItem v-if="isAdmin" value="empleado"
-                                    >Empleado</SelectItem
-                                >
                                 <SelectItem v-if="isAdmin" value="administrador"
                                     >Administrador</SelectItem
                                 >

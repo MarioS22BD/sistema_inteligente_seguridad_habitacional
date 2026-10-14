@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Api\CameraAccessController;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'Welcome')->name('home');
@@ -13,6 +14,9 @@ Route::middleware(['auth'])->group(function () {
         ->name('usuarios.index');
     Route::inertia('configuracion', 'Configuracion')->name('configuracion');
 });
+
+Route::get('/camera/authorize', [CameraAccessController::class, 'authorizeStream'])
+    ->name('camera.authorize');
 
 require __DIR__.'/settings.php';
 

@@ -9,7 +9,7 @@ class EstadoSistemaPolicy
 {
     public function operate(User $user): bool
     {
-        return $user->esAdmin() || $user->esEmpleado();
+        return $user->esAdmin();
     }
 
     public function viewAny(User $user): bool

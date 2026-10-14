@@ -1,12 +1,12 @@
 #include "esp_camera.h"
 #include <WiFi.h>
 #include "esp_http_server.h"
-#include "soc/soc.h"
-#include "soc/rtc_cntl_reg.h"
+#include <cstring>
 
 // ======= CONFIGURACION WiFi =======
 const char* WIFI_SSID = "TU_SSID";
 const char* WIFI_PASS = "TU_PASSWORD";
+const char* CAMERA_PROXY_TOKEN = "REPLACE_WITH_RANDOM_CAMERA_PROXY_TOKEN";
 // ================================
 
 // Pines de la camara AI Thinker
@@ -33,15 +33,28 @@ static const char* STREAM_PART = "Content-Type: image/jpeg\r\nContent-Length: %u
 
 httpd_handle_t servidor_pagina = NULL;
 httpd_handle_t servidor_video = NULL;
+unsigned long ultimoIntentoWifi = 0;
+
+bool solicitudAutorizada(httpd_req_t *req) {
+  char token[128] = {0};
+  size_t tokenLength = httpd_req_get_hdr_value_len(req, "X-Camera-Token");
+  if (tokenLength == 0 || tokenLength >= sizeof(token)) return false;
+  if (httpd_req_get_hdr_value_str(req, "X-Camera-Token", token, sizeof(token)) != ESP_OK) return false;
+  return std::strcmp(token, CAMERA_PROXY_TOKEN) == 0;
+}
 
 static esp_err_t pagina_handler(httpd_req_t *req) {
+  if (!solicitudAutorizada(req)) {
+    return httpd_resp_send_err(req, HTTPD_401_UNAUTHORIZED, "Unauthorized");
+  }
+
   String html = "<!DOCTYPE html><html><head>"
                 "<meta name='viewport' content='width=device-width,initial-scale=1'>"
                 "<title>Camara SISH</title>"
                 "<style>body{margin:0;background:#111;color:#fff;font-family:sans-serif;text-align:center}"
                 "img{width:100%;max-width:640px}</style></head><body>"
                 "<h2>Camara en vivo</h2>"
-                "<img src='http://" + WiFi.localIP().toString() + ":81/stream'>"
+                "<img src='/camera/stream'>"
                 "</body></html>";
 
   httpd_resp_set_type(req, "text/html");
@@ -49,13 +62,17 @@ static esp_err_t pagina_handler(httpd_req_t *req) {
 }
 
 static esp_err_t stream_handler(httpd_req_t *req) {
+  if (!solicitudAutorizada(req)) {
+    return httpd_resp_send_err(req, HTTPD_401_UNAUTHORIZED, "Unauthorized");
+  }
+
   camera_fb_t *fb = NULL;
   esp_err_t res = ESP_OK;
   char part_buf[64];
 
   res = httpd_resp_set_type(req, STREAM_TYPE);
   if (res != ESP_OK) return res;
-  httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+  httpd_resp_set_hdr(req, "Cache-Control", "no-store");
 
   while (true) {
     fb = esp_camera_fb_get();
@@ -78,21 +95,33 @@ void iniciarServidores() {
   httpd_config_t config = HTTPD_DEFAULT_CONFIG();
 
   config.server_port = 80;
-  httpd_uri_t uri_pagina = { "/", HTTP_GET, pagina_handler, NULL };
-  if (httpd_start(&servidor_pagina, &config) == ESP_OK) {
-    httpd_register_uri_handler(servidor_pagina, &uri_pagina);
+  httpd_uri_t uri_pagina = {};
+  uri_pagina.uri = "/";
+  uri_pagina.method = HTTP_GET;
+  uri_pagina.handler = pagina_handler;
+  if (httpd_start(&servidor_pagina, &config) != ESP_OK) {
+    Serial.println("Error al iniciar servidor HTTP de pagina");
+    servidor_pagina = NULL;
+  } else if (httpd_register_uri_handler(servidor_pagina, &uri_pagina) != ESP_OK) {
+    Serial.println("Error al registrar la pagina de camara");
   }
 
   config.server_port = 81;
   config.ctrl_port += 1;
-  httpd_uri_t uri_stream = { "/stream", HTTP_GET, stream_handler, NULL };
-  if (httpd_start(&servidor_video, &config) == ESP_OK) {
-    httpd_register_uri_handler(servidor_video, &uri_stream);
+  httpd_uri_t uri_stream = {};
+  uri_stream.uri = "/stream";
+  uri_stream.method = HTTP_GET;
+  uri_stream.handler = stream_handler;
+  if (httpd_start(&servidor_video, &config) != ESP_OK) {
+    Serial.println("Error al iniciar servidor MJPEG");
+    servidor_video = NULL;
+  } else if (httpd_register_uri_handler(servidor_video, &uri_stream) != ESP_OK) {
+    Serial.println("Error al registrar endpoint MJPEG");
   }
 }
 
 bool iniciarCamara() {
-  camera_config_t config;
+  camera_config_t config = {};
   config.ledc_channel = LEDC_CHANNEL_0;
   config.ledc_timer = LEDC_TIMER_0;
   config.pin_d0 = Y2_GPIO_NUM;
@@ -130,10 +159,6 @@ bool iniciarCamara() {
 }
 
 void setup() {
-  // Se recomienda revisarlo en cada despliegue real; deshabilitar la protección de brownout
-  // solo si el hardware presenta caídas de voltaje repetidas.
-  WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
-
   Serial.begin(115200);
   delay(1000);
 
@@ -150,15 +175,9 @@ void setup() {
   WiFi.setSleep(false);
 
   Serial.print("Conectando");
-  int intentos = 0;
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
-    intentos++;
-    if (intentos > 40) {
-      Serial.println("\nNo conecto, reiniciando...");
-      ESP.restart();
-    }
   }
   Serial.println();
 
@@ -169,5 +188,10 @@ void setup() {
 }
 
 void loop() {
-  delay(10000);
+  if (WiFi.status() != WL_CONNECTED && millis() - ultimoIntentoWifi >= 10000) {
+    ultimoIntentoWifi = millis();
+    Serial.println("WiFi desconectado; intentando reconectar");
+    WiFi.reconnect();
+  }
+  delay(100);
 }

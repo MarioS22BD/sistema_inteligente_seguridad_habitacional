@@ -4,14 +4,19 @@ use App\Models\User;
 
 beforeEach(fn () => seedApiRolesAndPermissions());
 
-it('requires authentication to manage users', function (): void {
+it('requires authentication and administrator authorization to manage users', function (): void {
     $this->getJson('/api/v1/usuarios')->assertUnauthorized();
+
+    $user = makeApiUserWithRole('usuario');
+    $this->actingAs($user, 'sanctum')
+        ->getJson('/api/v1/usuarios')
+        ->assertForbidden();
 });
 
-it('allows administrators to list and search all roles with pagination', function (): void {
+it('allows administrators to list and search users with pagination', function (): void {
     $admin = makeApiUserWithRole('administrador');
     User::factory()->create(['name' => 'Contacto Operativo', 'rol' => 'usuario']);
-    User::factory()->create(['name' => 'Empleado Demo', 'rol' => 'empleado']);
+    User::factory()->create(['name' => 'Otro Administrador', 'rol' => 'administrador']);
 
     $this->actingAs($admin, 'sanctum')
         ->getJson('/api/v1/usuarios?search=Contacto&per_page=1')
@@ -21,115 +26,55 @@ it('allows administrators to list and search all roles with pagination', functio
         ->assertJsonPath('data.0.name', 'Contacto Operativo');
 });
 
-it('limits employee listing to normal users', function (): void {
-    $employee = makeApiUserWithRole('empleado');
-    User::factory()->create(['rol' => 'usuario']);
-    User::factory()->create(['rol' => 'administrador']);
-    User::factory()->create(['rol' => 'empleado']);
-
-    $this->actingAs($employee, 'sanctum')
-        ->getJson('/api/v1/usuarios')
-        ->assertOk()
-        ->assertJsonCount(1, 'data')
-        ->assertJsonPath('data.0.rol', 'usuario');
-});
-
-it('allows administrators to create users with any role', function (): void {
+it('allows administrators to create only the supported roles', function (): void {
     $admin = makeApiUserWithRole('administrador');
 
     $this->actingAs($admin, 'sanctum')
-        ->postJson('/api/v1/usuarios', [
-            'name' => 'Nuevo Administrador',
-            'email' => 'nuevo.admin@seguridad.test',
-            'password' => 'password123',
-            'rol' => 'administrador',
-        ])
-        ->assertCreated()
-        ->assertJsonPath('data.rol', 'administrador')
-        ->assertJsonMissingPath('data.password');
-
-    $this->assertDatabaseHas('users', [
-        'email' => 'nuevo.admin@seguridad.test',
-        'rol' => 'administrador',
-    ]);
-
-    $createdUser = User::query()
-        ->where('email', 'nuevo.admin@seguridad.test')
-        ->firstOrFail();
-
-    expect($createdUser->email_verified_at)->not->toBeNull();
-
-    $this->actingAs($createdUser)
-        ->get('/dashboard')
-        ->assertOk();
-});
-
-it('allows employees to create normal users but not privileged roles', function (): void {
-    $employee = makeApiUserWithRole('empleado');
-
-    $this->actingAs($employee, 'sanctum')
         ->postJson('/api/v1/usuarios', [
             'name' => 'Nuevo Usuario',
             'email' => 'nuevo.usuario@seguridad.test',
             'password' => 'password123',
             'rol' => 'usuario',
         ])
-        ->assertCreated();
+        ->assertCreated()
+        ->assertJsonPath('data.rol', 'usuario')
+        ->assertJsonMissingPath('data.password');
 
-    $createdUser = User::query()
-        ->where('email', 'nuevo.usuario@seguridad.test')
-        ->firstOrFail();
-
-    expect($createdUser->email_verified_at)->not->toBeNull();
-
-    $this->actingAs($createdUser)
-        ->get('/dashboard')
-        ->assertOk();
-
-    $this->actingAs($employee, 'sanctum')
+    $this->actingAs($admin, 'sanctum')
         ->postJson('/api/v1/usuarios', [
-            'name' => 'Nuevo Empleado',
-            'email' => 'nuevo.empleado@seguridad.test',
+            'name' => 'Rol no válido',
+            'email' => 'rol.invalido@seguridad.test',
             'password' => 'password123',
             'rol' => 'empleado',
         ])
-        ->assertForbidden();
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('rol');
+
+    $createdUser = User::query()->where('email', 'nuevo.usuario@seguridad.test')->firstOrFail();
+    expect($createdUser->email_verified_at)->not->toBeNull();
 });
 
-it('allows employees to update normal-user contact data but not roles or privileged accounts', function (): void {
-    $employee = makeApiUserWithRole('empleado');
-    $normalUser = User::factory()->create(['rol' => 'usuario']);
-    $otherEmployee = User::factory()->create(['rol' => 'empleado']);
-
-    $this->actingAs($employee, 'sanctum')
-        ->patchJson('/api/v1/usuarios/'.$normalUser->id, [
-            'name' => 'Nombre actualizado',
-            'email' => 'contacto.actualizado@seguridad.test',
-        ])
-        ->assertOk()
-        ->assertJsonPath('data.name', 'Nombre actualizado');
-
-    $this->actingAs($employee, 'sanctum')
-        ->patchJson('/api/v1/usuarios/'.$normalUser->id, ['rol' => 'administrador'])
-        ->assertForbidden();
-
-    $this->actingAs($employee, 'sanctum')
-        ->patchJson('/api/v1/usuarios/'.$otherEmployee->id, ['name' => 'No permitido'])
-        ->assertForbidden();
-});
-
-it('reserves user deletion for administrators', function (): void {
+it('allows only administrators to update and delete users', function (): void {
     $admin = makeApiUserWithRole('administrador');
-    $employee = makeApiUserWithRole('empleado');
+    $user = makeApiUserWithRole('usuario');
     $target = User::factory()->create(['rol' => 'usuario']);
 
-    $this->actingAs($employee, 'sanctum')
+    $this->actingAs($user, 'sanctum')
+        ->patchJson('/api/v1/usuarios/'.$target->id, ['name' => 'No permitido'])
+        ->assertForbidden();
+    $this->actingAs($user, 'sanctum')
         ->deleteJson('/api/v1/usuarios/'.$target->id)
         ->assertForbidden();
 
     $this->actingAs($admin, 'sanctum')
+        ->patchJson('/api/v1/usuarios/'.$target->id, [
+            'name' => 'Nombre actualizado',
+            'rol' => 'administrador',
+        ])
+        ->assertOk()
+        ->assertJsonPath('data.rol', 'administrador');
+
+    $this->actingAs($admin, 'sanctum')
         ->deleteJson('/api/v1/usuarios/'.$target->id)
         ->assertNoContent();
-
-    $this->assertDatabaseMissing('users', ['id' => $target->id]);
 });

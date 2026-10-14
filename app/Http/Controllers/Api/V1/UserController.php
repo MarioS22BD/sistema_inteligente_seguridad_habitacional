@@ -20,9 +20,7 @@ class UserController extends Controller
         $actor = $request->user();
         $query = User::query()->orderBy('name');
 
-        if ($actor->esEmpleado()) {
-            $query->where('rol', 'usuario');
-        } elseif ($request->filled('rol')) {
+        if ($request->filled('rol')) {
             $query->where('rol', $request->string('rol')->toString());
         }
 
@@ -45,7 +43,7 @@ class UserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8'],
-            'rol' => ['required', Rule::in(['administrador', 'empleado', 'usuario'])],
+            'rol' => ['required', Rule::in(['administrador', 'usuario'])],
         ]);
 
         Gate::authorize('create', [User::class, $validated['rol']]);
@@ -82,11 +80,8 @@ class UserController extends Controller
         ];
 
         if ($actor->esAdmin()) {
-            $rules['rol'] = ['sometimes', Rule::in(['administrador', 'empleado', 'usuario'])];
+            $rules['rol'] = ['sometimes', Rule::in(['administrador', 'usuario'])];
             $rules['password'] = ['sometimes', 'required', 'string', 'min:8'];
-        } else {
-            $rules['rol'] = ['prohibited'];
-            $rules['password'] = ['prohibited'];
         }
 
         $validated = $request->validate($rules);

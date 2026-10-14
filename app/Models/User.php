@@ -40,11 +40,6 @@ class User extends Authenticatable implements PasskeyUser
         return $this->rol === 'administrador';
     }
 
-    public function esEmpleado(): bool
-    {
-        return $this->rol === 'empleado';
-    }
-
     public function esUsuario(): bool
     {
         return $this->rol === 'usuario';

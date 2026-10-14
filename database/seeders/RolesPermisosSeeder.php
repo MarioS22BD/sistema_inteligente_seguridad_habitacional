@@ -34,11 +34,6 @@ class RolesPermisosSeeder extends Seeder
 
         $permisosPorRol = [
             'administrador' => $permisos,
-            'empleado' => [
-                'ver_estado_sistema',
-                'ver_eventos',
-                'crear_eventos',
-            ],
             'usuario' => [
                 'ver_estado_sistema',
                 'ver_eventos',
@@ -55,17 +50,9 @@ class RolesPermisosSeeder extends Seeder
         }
 
         User::query()
-            ->whereIn('email', [
-                'admin@seguridad.local',
-                'empleado@seguridad.local',
-                'usuario@seguridad.local',
-            ])
+            ->whereIn('rol', ['administrador', 'usuario'])
             ->get()
-            ->each(function (User $usuario): void {
-                if (in_array($usuario->rol, ['administrador', 'empleado', 'usuario'], true)) {
-                    $usuario->syncRoles($usuario->rol);
-                }
-            });
+            ->each(fn (User $usuario) => $usuario->syncRoles($usuario->rol));
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
     }

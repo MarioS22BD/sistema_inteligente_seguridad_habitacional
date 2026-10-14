@@ -14,22 +14,21 @@ class EventoSeguridadPolicy
 
     public function view(User $user, EventoSeguridad $evento): bool
     {
-        return $user->can('ver_eventos')
-            && (! $user->esUsuario() || $evento->user_id === $user->id);
+        return $user->can('ver_eventos');
     }
 
     public function create(User $user): bool
     {
-        return $user->can('crear_eventos');
+        return $user->esAdmin();
     }
 
     public function update(User $user, EventoSeguridad $evento): bool
     {
-        return $user->can('editar_eventos');
+        return $user->esAdmin();
     }
 
     public function delete(User $user, EventoSeguridad $evento): bool
     {
-        return $user->can('eliminar_eventos');
+        return $user->esAdmin();
     }
 }

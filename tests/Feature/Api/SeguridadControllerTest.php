@@ -1,92 +1,100 @@
 <?php
 
 use App\Models\EstadoSistema;
+use App\Models\EventoSeguridad;
 
 beforeEach(fn () => seedApiRolesAndPermissions());
 
-it('actualiza el estado del sistema desde el ESP32 con respuesta exitosa', function (): void {
-    $response = $this->postJson('/api/v1/seguridad/actualizar', [
-        'esta_activado' => true,
-        'puerta_abierta' => true,
-        'movimiento_detectado' => false,
-    ]);
-
-    $response
-        ->assertOk()
-        ->assertJson([
-            'estado' => 'exito',
-            'mensaje' => 'Estado actualizado correctamente',
-        ]);
-
-    $this->assertDatabaseHas('estados_sistema', [
-        'esta_activado' => true,
-        'puerta_abierta' => true,
-        'movimiento_detectado' => false,
-        'estado' => 'ALARMA',
-    ]);
-
-    $this->assertDatabaseHas('eventos_seguridad', [
-        'tipo_evento' => 'PUERTA_ABIERTA',
-        'gravedad' => 'advertencia',
-    ]);
-});
-
-it('valida los campos obligatorios de la actualización del ESP32', function (): void {
+it('does not expose the former public security state update route', function (): void {
     $this->postJson('/api/v1/seguridad/actualizar', [
         'esta_activado' => true,
-    ])
-        ->assertStatus(422)
-        ->assertJsonValidationErrors(['puerta_abierta', 'movimiento_detectado']);
+        'puerta_abierta' => true,
+        'movimiento_detectado' => true,
+    ])->assertNotFound();
+
+    $this->assertDatabaseCount('estados_sistema', 0);
 });
 
-it('crea una alarma cuando la puerta y el movimiento se detectan mientras el sistema está activado', function (): void {
-    EstadoSistema::query()->create([
+it('rejects invalid, missing, and query-string device credentials', function (): void {
+    provisionApiDevice('correct-device-token');
+
+    $payload = [
+        'puerta_abierta' => false,
+        'movimiento_detectado' => false,
+    ];
+
+    $this->postJson('/api/v1/dispositivos/esp8266/telemetria', $payload)
+        ->assertUnauthorized();
+
+    $this->withHeader('X-Device-Token', 'wrong-token')
+        ->postJson('/api/v1/dispositivos/esp8266/telemetria', $payload)
+        ->assertUnauthorized();
+
+    $this->postJson('/api/v1/dispositivos/esp8266/telemetria?token=correct-device-token', $payload)
+        ->assertUnauthorized();
+});
+
+it('accepts ESP8266 sensor reports without allowing it to change alarm arming', function (): void {
+    $device = provisionApiDevice();
+    $state = EstadoSistema::query()->create([
         'esta_activado' => true,
         'puerta_abierta' => false,
         'movimiento_detectado' => false,
         'estado' => 'NORMAL',
     ]);
 
-    $this->postJson('/api/v1/seguridad/actualizar', [
-        'esta_activado' => true,
-        'puerta_abierta' => true,
-        'movimiento_detectado' => true,
-    ])->assertOk();
+    $this->withHeader('X-Device-Token', 'esp8266-test-token')
+        ->postJson('/api/v1/dispositivos/esp8266/telemetria', [
+            'esta_activado' => false,
+            'puerta_abierta' => true,
+            'movimiento_detectado' => true,
+            'distancia_cm' => 32.5,
+        ])
+        ->assertOk();
+
+    expect($state->refresh()->esta_activado)->toBeTrue()
+        ->and($state->puerta_abierta)->toBeTrue()
+        ->and($state->distancia_cm)->toBe('32.50')
+        ->and($device->refresh()->last_seen_at)->not->toBeNull();
 
     $this->assertDatabaseHas('eventos_seguridad', [
-        'tipo_evento' => 'PUERTA_ABIERTA',
+        'tipo_evento' => 'PROXIMIDAD_DETECTADA',
         'gravedad' => 'advertencia',
     ]);
-
-    $this->assertDatabaseHas('eventos_seguridad', [
-        'tipo_evento' => 'MOVIMIENTO_DETECTADO',
-        'gravedad' => 'advertencia',
-    ]);
-
     $this->assertDatabaseHas('eventos_seguridad', [
         'tipo_evento' => 'ALARMA_DISPARADA',
         'gravedad' => 'critico',
     ]);
 });
 
-it('requiere un token válido para actualizar desde un dispositivo esp8266', function (): void {
-    config()->set('device.api_token', 'esp-secret');
+it('validates required sensor fields on device telemetry', function (): void {
+    provisionApiDevice();
 
-    $this->postJson('/api/v1/dispositivos/esp8266/estado', [
-        'esta_activado' => true,
-        'puerta_abierta' => false,
-        'movimiento_detectado' => false,
-    ])->assertUnauthorized();
+    $this->withHeader('X-Device-Token', 'esp8266-test-token')
+        ->postJson('/api/v1/dispositivos/esp8266/telemetria', [
+            'puerta_abierta' => false,
+        ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('movimiento_detectado');
+});
 
-    $this->withHeaders([
-        'X-Device-Token' => 'esp-secret',
-    ])->postJson('/api/v1/dispositivos/esp8266/estado', [
-        'esta_activado' => true,
-        'puerta_abierta' => false,
-        'movimiento_detectado' => false,
-    ])->assertOk()
-        ->assertJson([
-            'estado' => 'exito',
-            'mensaje' => 'Estado del dispositivo actualizado correctamente',
-        ]);
+it('requires user authentication and administrator authorization to arm the alarm', function (): void {
+    $this->putJson('/api/v1/sistema/armado', ['esta_activado' => true])
+        ->assertUnauthorized();
+
+    $user = makeApiUserWithRole('usuario');
+    $this->actingAs($user, 'sanctum')
+        ->putJson('/api/v1/sistema/armado', ['esta_activado' => true])
+        ->assertForbidden();
+
+    $admin = makeApiUserWithRole('administrador');
+    $this->actingAs($admin, 'sanctum')
+        ->putJson('/api/v1/sistema/armado', ['esta_activado' => true])
+        ->assertOk()
+        ->assertJsonPath('data.esta_activado', true);
+
+    $this->assertDatabaseHas('eventos_seguridad', [
+        'tipo_evento' => 'ALARMA_ARMADA',
+        'user_id' => $admin->id,
+    ]);
 });

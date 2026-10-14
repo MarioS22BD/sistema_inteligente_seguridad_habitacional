@@ -46,7 +46,7 @@ const mainNavItems = computed<NavItem[]>(() => [
         href: '/configuracion',
         icon: Settings,
     },
-    ...(['administrador', 'empleado'].includes(userRole.value)
+    ...(userRole.value === 'administrador'
         ? [{ title: 'Usuarios', href: '/usuarios', icon: Users }]
         : []),
 ]);

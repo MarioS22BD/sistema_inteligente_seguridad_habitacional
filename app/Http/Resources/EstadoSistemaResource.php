@@ -26,6 +26,7 @@ class EstadoSistemaResource extends JsonResource
             'movimiento_detectado' => $this->movimiento_detectado,
             'modo_emergencia' => $this->modo_emergencia,
             'servicio_puerta_activo' => $this->servicio_puerta_activo,
+            'distancia_cm' => $this->distancia_cm,
             'estado' => $this->estado,
             'descripcion_ultima_alerta' => $this->descripcion_ultima_alerta,
             'fecha_ultima_alerta' => $this->fecha_ultima_alerta === null

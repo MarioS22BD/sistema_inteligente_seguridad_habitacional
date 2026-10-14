@@ -17,6 +17,7 @@ class EstadoSistema extends Model
         'fecha_ultima_alerta',
         'modo_emergencia',
         'servicio_puerta_activo',
+        'distancia_cm',
     ];
 
     protected function casts(): array
@@ -28,6 +29,7 @@ class EstadoSistema extends Model
             'modo_emergencia' => 'boolean',
             'servicio_puerta_activo' => 'boolean',
             'fecha_ultima_alerta' => 'datetime',
+            'distancia_cm' => 'decimal:2',
         ];
     }
 }

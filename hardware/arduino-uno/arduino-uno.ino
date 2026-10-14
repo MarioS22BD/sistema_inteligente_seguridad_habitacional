@@ -42,16 +42,7 @@ void loop() {
   char tecla = teclado.getKey();
 
   if (tecla) {
-    Serial.print("Tecla: ");
-    Serial.println(tecla);
-
     if (tecla == '#') {
-      Serial.print("Escrito: [");
-      Serial.print(ingresada);
-      Serial.print("]  Clave: [");
-      Serial.print(CLAVE);
-      Serial.println("]");
-
       if (ingresada == CLAVE) {
         esp.write('T');
         Serial.println("-> Clave correcta");
@@ -70,8 +61,6 @@ void loop() {
     else if (ingresada.length() < 8) {
       ingresada += tecla;
       esp.write('p');
-      Serial.print("Llevas: ");
-      Serial.println(ingresada);
     }
   }
 }
