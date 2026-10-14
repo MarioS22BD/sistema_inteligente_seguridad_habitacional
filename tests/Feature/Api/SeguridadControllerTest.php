@@ -1,7 +1,6 @@
 <?php
 
 use App\Models\EstadoSistema;
-use App\Models\EventoSeguridad;
 
 beforeEach(fn () => seedApiRolesAndPermissions());
 

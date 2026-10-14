@@ -1,8 +1,8 @@
 <?php
 
-use App\Http\Controllers\Api\EstadoSistemaController;
 use App\Http\Controllers\Api\DeviceCommandController;
 use App\Http\Controllers\Api\DeviceStatusController;
+use App\Http\Controllers\Api\EstadoSistemaController;
 use App\Http\Controllers\Api\EventoSeguridadController;
 use App\Http\Controllers\Api\SeguridadController;
 use App\Http\Controllers\Api\V1\SistemaEmergenciaController;

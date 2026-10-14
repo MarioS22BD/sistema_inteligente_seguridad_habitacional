@@ -1,7 +1,7 @@
 <?php
 
-use App\Models\User;
 use App\Models\IotDevice;
+use App\Models\User;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 

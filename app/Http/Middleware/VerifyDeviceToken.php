@@ -2,8 +2,8 @@
 
 namespace App\Http\Middleware;
 
-use Closure;
 use App\Models\IotDevice;
+use Closure;
 use Illuminate\Http\Request;
 
 class VerifyDeviceToken
