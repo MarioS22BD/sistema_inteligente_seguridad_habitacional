@@ -68,3 +68,25 @@ it('crea una alarma cuando la puerta y el movimiento se detectan mientras el sis
         'gravedad' => 'critico',
     ]);
 });
+
+it('requiere un token válido para actualizar desde un dispositivo esp8266', function (): void {
+    config()->set('device.api_token', 'esp-secret');
+
+    $this->postJson('/api/v1/dispositivos/esp8266/estado', [
+        'esta_activado' => true,
+        'puerta_abierta' => false,
+        'movimiento_detectado' => false,
+    ])->assertUnauthorized();
+
+    $this->withHeaders([
+        'X-Device-Token' => 'esp-secret',
+    ])->postJson('/api/v1/dispositivos/esp8266/estado', [
+        'esta_activado' => true,
+        'puerta_abierta' => false,
+        'movimiento_detectado' => false,
+    ])->assertOk()
+        ->assertJson([
+            'estado' => 'exito',
+            'mensaje' => 'Estado del dispositivo actualizado correctamente',
+        ]);
+});

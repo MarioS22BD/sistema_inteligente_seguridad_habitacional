@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/v1/seguridad/actualizar', [SeguridadController::class, 'actualizarEstado']);
+Route::middleware('device.token')->post('/v1/dispositivos/esp8266/estado', [SeguridadController::class, 'actualizarDesdeDispositivo']);
 
 Route::middleware('auth:sanctum')->group(function (): void {
     Route::apiResource('v1/usuarios', UserController::class)->parameters([

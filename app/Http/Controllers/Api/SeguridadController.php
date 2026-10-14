@@ -19,6 +19,36 @@ class SeguridadController extends Controller
             'movimiento_detectado' => ['required', 'boolean'],
         ]);
 
+        $this->guardarEstadoSistema($datos);
+
+        return response()->json([
+            'estado' => 'exito',
+            'mensaje' => 'Estado actualizado correctamente',
+        ], 200);
+    }
+
+    public function actualizarDesdeDispositivo(Request $request): JsonResponse
+    {
+        $datos = $request->validate([
+            'esta_activado' => ['nullable', 'boolean'],
+            'puerta_abierta' => ['required', 'boolean'],
+            'movimiento_detectado' => ['required', 'boolean'],
+            'distancia_cm' => ['nullable', 'numeric', 'min:0', 'max:1000'],
+        ]);
+
+        $this->guardarEstadoSistema($datos);
+
+        return response()->json([
+            'estado' => 'exito',
+            'mensaje' => 'Estado del dispositivo actualizado correctamente',
+        ], 200);
+    }
+
+    /**
+     * @param  array{esta_activado?: bool|null, puerta_abierta: bool, movimiento_detectado: bool, distancia_cm?: float|int|null}  $datos
+     */
+    private function guardarEstadoSistema(array $datos): void
+    {
         DB::transaction(function () use ($datos): void {
             $estadoSistema = EstadoSistema::firstOrCreate([], [
                 'esta_activado' => false,
@@ -93,10 +123,5 @@ class SeguridadController extends Controller
             $estadoSistema->movimiento_detectado = $movimientoDetectado;
             $estadoSistema->save();
         });
-
-        return response()->json([
-            'estado' => 'exito',
-            'mensaje' => 'Estado actualizado correctamente',
-        ], 200);
     }
 }
