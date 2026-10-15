@@ -65,3 +65,46 @@ it('rejects invalid event creation data for administrators', function (): void {
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['descripcion', 'gravedad']);
 });
+
+it('allows normal users to see automatic sensor events with no user associated', function (): void {
+    $sensorEvent = EventoSeguridad::query()->create([
+        'tipo_evento' => 'MOVIMIENTO_DETECTADO',
+        'descripcion' => 'Sensor HC-SR04 detectó proximidad',
+        'gravedad' => 'advertencia',
+        'user_id' => null,
+    ]);
+
+    $user = makeApiUserWithRole('usuario');
+
+    $this->actingAs($user, 'sanctum')
+        ->getJson('/api/v1/eventos')
+        ->assertOk()
+        ->assertJsonPath('data.0.id', $sensorEvent->id)
+        ->assertJsonPath('data.0.tipo_evento', 'MOVIMIENTO_DETECTADO');
+});
+
+it('protects user privacy by hiding email from normal users while exposing it to administrators', function (): void {
+    $author = makeApiUserWithRole('administrador');
+    $event = EventoSeguridad::query()->create([
+        'tipo_evento' => 'APERTURA_EMERGENCIA',
+        'descripcion' => 'Apertura manual por administrador',
+        'gravedad' => 'critico',
+        'user_id' => $author->id,
+    ]);
+
+    $normalUser = makeApiUserWithRole('usuario');
+
+    // Normal user: can see name and role, but NOT email
+    $this->actingAs($normalUser, 'sanctum')
+        ->getJson('/api/v1/eventos/'.$event->id)
+        ->assertOk()
+        ->assertJsonPath('data.usuario.name', $author->name)
+        ->assertJsonMissingPath('data.usuario.email');
+
+    // Administrator: can see name, role, AND email
+    $this->actingAs($author, 'sanctum')
+        ->getJson('/api/v1/eventos/'.$event->id)
+        ->assertOk()
+        ->assertJsonPath('data.usuario.name', $author->name)
+        ->assertJsonPath('data.usuario.email', $author->email);
+});

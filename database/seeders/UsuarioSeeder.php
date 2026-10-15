@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Role;
 
 class UsuarioSeeder extends Seeder
 {
@@ -38,6 +39,12 @@ class UsuarioSeeder extends Seeder
 
             if ($cuenta->wasRecentlyCreated && $cuenta->email_verified_at === null) {
                 $cuenta->forceFill(['email_verified_at' => now()])->save();
+            }
+
+            if (Role::where('name', $usuario['rol'])->where('guard_name', 'web')->exists()) {
+                if (! $cuenta->hasRole($usuario['rol'], 'web')) {
+                    $cuenta->assignRole($usuario['rol']);
+                }
             }
         }
     }

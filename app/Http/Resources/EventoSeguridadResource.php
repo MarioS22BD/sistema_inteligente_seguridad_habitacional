@@ -18,6 +18,9 @@ class EventoSeguridadResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $actor = $request->user();
+        $esAdmin = $actor?->esAdmin() ?? false;
+
         return [
             'id' => $this->id,
             'tipo_evento' => $this->tipo_evento,
@@ -26,12 +29,20 @@ class EventoSeguridadResource extends JsonResource
             'fecha_creacion' => $this->created_at?->toISOString(),
             'usuario' => $this->when(
                 $this->user_id !== null && $this->relationLoaded('user'),
-                fn (): ?array => $this->user === null ? null : [
-                    'id' => $this->user->id,
-                    'name' => $this->user->name,
-                    'email' => $this->user->email,
-                    'rol' => $this->user->rol,
-                ],
+                fn (): ?array => $this->user === null ? null : (
+                    $esAdmin
+                        ? [
+                            'id' => $this->user->id,
+                            'name' => $this->user->name,
+                            'email' => $this->user->email,
+                            'rol' => $this->user->rol,
+                        ]
+                        : [
+                            'id' => $this->user->id,
+                            'name' => $this->user->name,
+                            'rol' => $this->user->rol,
+                        ]
+                ),
             ),
         ];
     }

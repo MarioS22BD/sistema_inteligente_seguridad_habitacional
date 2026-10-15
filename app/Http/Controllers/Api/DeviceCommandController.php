@@ -61,11 +61,19 @@ class DeviceCommandController extends Controller
                     'updated_at' => now(),
                 ]);
 
-            $command = DeviceCommand::query()
+            $estado = EstadoSistema::query()->first();
+            $serviceActive = $estado?->servicio_puerta_activo ?? true;
+
+            $query = DeviceCommand::query()
                 ->where('iot_device_id', $device->id)
                 ->where('status', DeviceCommand::STATUS_PENDING)
-                ->where('expires_at', '>', now())
-                ->orderBy('created_at')
+                ->where('expires_at', '>', now());
+
+            if (! $serviceActive) {
+                $query->where('is_emergency', true);
+            }
+
+            $command = $query->orderBy('created_at')
                 ->lockForUpdate()
                 ->first();
 

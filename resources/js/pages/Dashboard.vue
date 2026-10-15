@@ -20,6 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import DashboardCamera from '@/components/DashboardCamera.vue';
 import { apiFetch } from '@/lib/apiFetch';
+import { generateIdempotencyKey } from '@/lib/uuid';
 import { dashboard } from '@/routes';
 
 defineOptions({
@@ -257,7 +258,7 @@ const requestEmergencyOpen = async (): Promise<void> => {
     isEmergencySubmitting.value = true;
 
     try {
-        emergencyIdempotencyKey.value ??= crypto.randomUUID();
+        emergencyIdempotencyKey.value ??= generateIdempotencyKey();
         const response = await apiFetch('/api/v1/sistema/apertura-emergencia', {
             method: 'POST',
             headers: { 'Idempotency-Key': emergencyIdempotencyKey.value },

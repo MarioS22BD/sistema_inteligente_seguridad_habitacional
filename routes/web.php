@@ -18,6 +18,12 @@ Route::middleware(['auth'])->group(function () {
 Route::get('/camera/authorize', [CameraAccessController::class, 'authorizeStream'])
     ->name('camera.authorize');
 
+Route::get('/camera/health', [CameraAccessController::class, 'health'])
+    ->name('camera.health');
+
+Route::get('/camera/stream', [CameraAccessController::class, 'stream'])
+    ->name('camera.stream');
+
 require __DIR__.'/settings.php';
 
 Route::post('/login', [LoginController::class, 'login'])

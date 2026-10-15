@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\EstadoSistemaResource;
 use App\Models\DeviceCommand;
 use App\Models\EstadoSistema;
 use App\Models\EventoSeguridad;
@@ -82,6 +83,10 @@ class SistemaEmergenciaController extends Controller
                 'action' => $command->action,
                 'status' => $command->status,
                 'expires_at' => $command->expires_at->toISOString(),
+                'claimed_at' => $command->claimed_at?->toISOString(),
+                'confirmed_at' => $command->confirmed_at?->toISOString(),
+                'result' => $command->result,
+                'error' => $command->error,
                 'message' => 'Solicitud aceptada; aún no hay confirmación del dispositivo.',
             ],
         ], 202);
@@ -129,7 +134,7 @@ class SistemaEmergenciaController extends Controller
             return $estado->refresh();
         });
 
-        return response()->json(['data' => $estado]);
+        return (new EstadoSistemaResource($estado))->response()->setStatusCode(200);
     }
 
     public function actualizarArmado(Request $request): JsonResponse
@@ -172,6 +177,6 @@ class SistemaEmergenciaController extends Controller
             return $estado->refresh();
         });
 
-        return response()->json(['data' => $estado]);
+        return (new EstadoSistemaResource($estado))->response()->setStatusCode(200);
     }
 }

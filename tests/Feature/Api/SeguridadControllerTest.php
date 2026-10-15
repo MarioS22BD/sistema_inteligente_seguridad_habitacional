@@ -96,4 +96,29 @@ it('requires user authentication and administrator authorization to arm the alar
         'tipo_evento' => 'ALARMA_ARMADA',
         'user_id' => $admin->id,
     ]);
+
+    // Desarmado
+    $this->actingAs($admin, 'sanctum')
+        ->putJson('/api/v1/sistema/armado', ['esta_activado' => false])
+        ->assertOk()
+        ->assertJsonPath('data.esta_activado', false);
+
+    $this->assertDatabaseHas('eventos_seguridad', [
+        'tipo_evento' => 'ALARMA_DESARMADA',
+        'user_id' => $admin->id,
+    ]);
+});
+
+it('validates that esta_activado must be a boolean when updating alarm arming', function (): void {
+    $admin = makeApiUserWithRole('administrador');
+
+    $this->actingAs($admin, 'sanctum')
+        ->putJson('/api/v1/sistema/armado', ['esta_activado' => 'not-a-boolean'])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('esta_activado');
+
+    $this->actingAs($admin, 'sanctum')
+        ->putJson('/api/v1/sistema/armado', [])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('esta_activado');
 });
