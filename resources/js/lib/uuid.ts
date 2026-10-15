@@ -14,13 +14,17 @@ export function generateIdempotencyKey(): string {
             window.crypto.getRandomValues(bytes);
             bytes[6] = (bytes[6] & 0x0f) | 0x40; // Version 4
             bytes[8] = (bytes[8] & 0x3f) | 0x80; // Variant RFC 4122
-            const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+            const hex = Array.from(bytes, (b) =>
+                b.toString(16).padStart(2, '0'),
+            ).join('');
             return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
         }
     }
 
     // Fallback matemático compatible con la validación de Laravel (regex: /^[a-zA-Z0-9._:-]{8,80}$/)
     const timestamp = Date.now().toString(36);
-    const randomPart = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    const randomPart =
+        Math.random().toString(36).substring(2, 15) +
+        Math.random().toString(36).substring(2, 15);
     return `idemp-${timestamp}-${randomPart}`;
 }
