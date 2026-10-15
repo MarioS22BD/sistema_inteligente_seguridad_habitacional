@@ -58,8 +58,8 @@ class CameraAccessController extends Controller
         // El streaming continuo en desarrollo debe ser atendido mediante el proxy inverso local
         // (Nginx para Windows) configurado según deploy/nginx/nginx-windows.conf.
         return response(
-            "El streaming MJPEG continuo requiere el proxy inverso local (Nginx para Windows) para no agotar los procesos de PHP en desarrollo.\n"
-            ."Consulte la configuración en deploy/nginx/nginx-windows.conf.",
+            'El streaming MJPEG continuo requiere el proxy inverso local (Nginx para Windows) para no agotar los procesos de PHP en desarrollo.'."\n"
+            .'Consulte la configuración en deploy/nginx/nginx-windows.conf.',
             503,
             [
                 'Content-Type' => 'text/plain; charset=utf-8',
