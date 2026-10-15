@@ -62,7 +62,7 @@ class DeviceCommandController extends Controller
                 ]);
 
             $estado = EstadoSistema::query()->first();
-            $serviceActive = $estado?->servicio_puerta_activo ?? true;
+            $serviceActive = $estado->servicio_puerta_activo ?? true;
 
             $query = DeviceCommand::query()
                 ->where('iot_device_id', $device->id)
