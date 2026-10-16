@@ -22,7 +22,7 @@ class CameraAccessController extends Controller
     {
         $this->validateCameraAccess($request);
 
-        $host = (string) config('camera.camera_host', '192.168.1.60');
+        $host = (string) config('camera.camera_host', '192.168.137.160');
         $port = (int) config('camera.camera_http_port', 80);
 
         $timeout = 1.5;

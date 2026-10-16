@@ -1,15 +1,11 @@
 #include "esp_camera.h"
 #include <WiFi.h>
 #include "esp_http_server.h"
-#include <cstring>
 
-// ======= CONFIGURACION WiFi =======
+// Configura estos valores localmente y no publiques las credenciales Wi-Fi.
 const char* WIFI_SSID = "TU_SSID";
 const char* WIFI_PASS = "TU_PASSWORD";
-const char* CAMERA_PROXY_TOKEN = "REPLACE_WITH_RANDOM_CAMERA_PROXY_TOKEN";
-// ================================
 
-// Pines de la camara AI Thinker
 #define PWDN_GPIO_NUM     32
 #define RESET_GPIO_NUM    -1
 #define XCLK_GPIO_NUM      0
@@ -28,96 +24,89 @@ const char* CAMERA_PROXY_TOKEN = "REPLACE_WITH_RANDOM_CAMERA_PROXY_TOKEN";
 #define PCLK_GPIO_NUM     22
 
 static const char* STREAM_TYPE = "multipart/x-mixed-replace;boundary=frame";
-static const char* STREAM_BOUNDARY = "\r\n--frame\r\n";
-static const char* STREAM_PART = "Content-Type: image/jpeg\r\nContent-Length: %u\r\n\r\n";
+static const char* STREAM_PART =
+  "--frame\r\nContent-Type: image/jpeg\r\nContent-Length: %u\r\n\r\n";
 
-httpd_handle_t servidor_pagina = NULL;
-httpd_handle_t servidor_video = NULL;
+httpd_handle_t servidor_pagina = nullptr;
+httpd_handle_t servidor_video = nullptr;
 unsigned long ultimoIntentoWifi = 0;
 
-bool solicitudAutorizada(httpd_req_t *req) {
-  char token[128] = {0};
-  size_t tokenLength = httpd_req_get_hdr_value_len(req, "X-Camera-Token");
-  if (tokenLength == 0 || tokenLength >= sizeof(token)) return false;
-  if (httpd_req_get_hdr_value_str(req, "X-Camera-Token", token, sizeof(token)) != ESP_OK) return false;
-  return std::strcmp(token, CAMERA_PROXY_TOKEN) == 0;
+esp_err_t paginaHandler(httpd_req_t* req) {
+  httpd_resp_set_type(req, "text/plain; charset=utf-8");
+  return httpd_resp_send(
+    req,
+    "ESP32-CAM lista. El video se consume desde el dashboard autenticado.",
+    HTTPD_RESP_USE_STRLEN);
 }
 
-static esp_err_t pagina_handler(httpd_req_t *req) {
-  if (!solicitudAutorizada(req)) {
-    return httpd_resp_send_err(req, HTTPD_401_UNAUTHORIZED, "Unauthorized");
-  }
-
-  String html = "<!DOCTYPE html><html><head>"
-                "<meta name='viewport' content='width=device-width,initial-scale=1'>"
-                "<title>Camara SISH</title>"
-                "<style>body{margin:0;background:#111;color:#fff;font-family:sans-serif;text-align:center}"
-                "img{width:100%;max-width:640px}</style></head><body>"
-                "<h2>Camara en vivo</h2>"
-                "<img src='/camera/stream'>"
-                "</body></html>";
-
-  httpd_resp_set_type(req, "text/html");
-  return httpd_resp_send(req, html.c_str(), html.length());
-}
-
-static esp_err_t stream_handler(httpd_req_t *req) {
-  if (!solicitudAutorizada(req)) {
-    return httpd_resp_send_err(req, HTTPD_401_UNAUTHORIZED, "Unauthorized");
-  }
-
-  camera_fb_t *fb = NULL;
-  esp_err_t res = ESP_OK;
-  char part_buf[64];
-
-  res = httpd_resp_set_type(req, STREAM_TYPE);
-  if (res != ESP_OK) return res;
+esp_err_t streamHandler(httpd_req_t* req) {
+  esp_err_t result = httpd_resp_set_type(req, STREAM_TYPE);
+  if (result != ESP_OK) return result;
   httpd_resp_set_hdr(req, "Cache-Control", "no-store");
-
+  char partHeader[64];
   while (true) {
-    fb = esp_camera_fb_get();
-    if (!fb) {
-      res = ESP_FAIL;
-    } else {
-      size_t hlen = snprintf(part_buf, 64, STREAM_PART, fb->len);
-      res = httpd_resp_send_chunk(req, part_buf, hlen);
-      if (res == ESP_OK) res = httpd_resp_send_chunk(req, (const char *)fb->buf, fb->len);
-      if (res == ESP_OK) res = httpd_resp_send_chunk(req, STREAM_BOUNDARY, strlen(STREAM_BOUNDARY));
-      esp_camera_fb_return(fb);
+    camera_fb_t* frame = esp_camera_fb_get();
+    if (frame == nullptr) {
+      return ESP_FAIL;
     }
-    if (res != ESP_OK) break;
-  }
 
-  return res;
+    const int headerLength = snprintf(
+      partHeader, sizeof(partHeader), STREAM_PART,
+      static_cast<unsigned int>(frame->len));
+    result = httpd_resp_send_chunk(req, partHeader, headerLength);
+    if (result == ESP_OK) {
+      result = httpd_resp_send_chunk(
+        req, reinterpret_cast<const char*>(frame->buf), frame->len);
+    }
+    if (result == ESP_OK) {
+      result = httpd_resp_send_chunk(req, "\r\n", 2);
+    }
+
+    esp_camera_fb_return(frame);
+    if (result != ESP_OK) return result;
+  }
 }
 
-void iniciarServidores() {
-  httpd_config_t config = HTTPD_DEFAULT_CONFIG();
+bool iniciarServidores() {
+  httpd_config_t paginaConfig = HTTPD_DEFAULT_CONFIG();
+  paginaConfig.server_port = 80;
+  paginaConfig.ctrl_port = 32768;
+  paginaConfig.max_open_sockets = 4;
 
-  config.server_port = 80;
-  httpd_uri_t uri_pagina = {};
-  uri_pagina.uri = "/";
-  uri_pagina.method = HTTP_GET;
-  uri_pagina.handler = pagina_handler;
-  if (httpd_start(&servidor_pagina, &config) != ESP_OK) {
-    Serial.println("Error al iniciar servidor HTTP de pagina");
-    servidor_pagina = NULL;
-  } else if (httpd_register_uri_handler(servidor_pagina, &uri_pagina) != ESP_OK) {
-    Serial.println("Error al registrar la pagina de camara");
+  if (httpd_start(&servidor_pagina, &paginaConfig) != ESP_OK) {
+    Serial.println("Error al iniciar servidor HTTP en puerto 80");
+    return false;
   }
 
-  config.server_port = 81;
-  config.ctrl_port += 1;
-  httpd_uri_t uri_stream = {};
-  uri_stream.uri = "/stream";
-  uri_stream.method = HTTP_GET;
-  uri_stream.handler = stream_handler;
-  if (httpd_start(&servidor_video, &config) != ESP_OK) {
-    Serial.println("Error al iniciar servidor MJPEG");
-    servidor_video = NULL;
-  } else if (httpd_register_uri_handler(servidor_video, &uri_stream) != ESP_OK) {
+  httpd_uri_t paginaUri = {};
+  paginaUri.uri = "/";
+  paginaUri.method = HTTP_GET;
+  paginaUri.handler = paginaHandler;
+  if (httpd_register_uri_handler(servidor_pagina, &paginaUri) != ESP_OK) {
+    Serial.println("Error al registrar pagina HTTP");
+    return false;
+  }
+
+  httpd_config_t videoConfig = HTTPD_DEFAULT_CONFIG();
+  videoConfig.server_port = 81;
+  videoConfig.ctrl_port = 32769;
+  videoConfig.max_open_sockets = 4;
+
+  if (httpd_start(&servidor_video, &videoConfig) != ESP_OK) {
+    Serial.println("Error al iniciar servidor MJPEG en puerto 81");
+    return false;
+  }
+
+  httpd_uri_t streamUri = {};
+  streamUri.uri = "/stream";
+  streamUri.method = HTTP_GET;
+  streamUri.handler = streamHandler;
+  if (httpd_register_uri_handler(servidor_video, &streamUri) != ESP_OK) {
     Serial.println("Error al registrar endpoint MJPEG");
+    return false;
   }
+
+  return true;
 }
 
 bool iniciarCamara() {
@@ -169,28 +158,31 @@ void setup() {
   }
 
   WiFi.mode(WIFI_STA);
-  WiFi.disconnect(true);
-  delay(500);
-  WiFi.begin(WIFI_SSID, WIFI_PASS);
   WiFi.setSleep(false);
+  WiFi.begin(WIFI_SSID, WIFI_PASS);
 
-  Serial.print("Conectando");
+  Serial.print("Conectando a Wi-Fi");
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
   }
   Serial.println();
 
-  iniciarServidores();
+  if (!iniciarServidores()) {
+    Serial.println("No se pudieron iniciar los servidores de camara");
+    while (true) delay(1000);
+  }
 
-  Serial.print("Abre en el navegador: http://");
+  Serial.print("Wi-Fi conectado. IP actual: ");
   Serial.println(WiFi.localIP());
+  Serial.println("MJPEG disponible en puerto 81, ruta /stream");
 }
 
 void loop() {
-  if (WiFi.status() != WL_CONNECTED && millis() - ultimoIntentoWifi >= 10000) {
+  if (WiFi.status() != WL_CONNECTED &&
+      millis() - ultimoIntentoWifi >= 10000) {
     ultimoIntentoWifi = millis();
-    Serial.println("WiFi desconectado; intentando reconectar");
+    Serial.println("Wi-Fi desconectado; intentando reconectar");
     WiFi.reconnect();
   }
   delay(100);

@@ -4,37 +4,47 @@
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
 #include <Servo.h>
+#include <math.h>
 
 const char* WIFI_SSID = "TU_SSID";
 const char* WIFI_PASS = "TU_PASSWORD";
 const char* DEVICE_API_TOKEN = "FLASH_DEVICE_TOKEN_HERE";
-const char* API_BASE_URL = "https://192.168.1.50";
-const char* SERVER_CERT_FINGERPRINT = "SET_SHA1_CERTIFICATE_FINGERPRINT";
+const char* API_BASE_URL = "http://192.168.137.1:8080";
 
 const unsigned long WIFI_RETRY_MS = 10000;
 const unsigned long TELEMETRY_INTERVAL_MS = 10000;
 const unsigned long ORDER_POLL_INTERVAL_MS = 1000;
-const unsigned long SENSOR_INTERVAL_MS = 100;
+const unsigned long SENSOR_INTERVAL_MS = 50;
 const unsigned long LED_HOLD_MS = 10000;
-const float DISTANCE_DETECTION_CM = 50.0;
-const uint16_t HTTP_TIMEOUT_MS = 750;
+const uint8_t FLOOR_CALIBRATION_SAMPLES = 20;
+const float DISTANCE_CHANGE_DETECTION_CM = 15.0;
+const uint16_t HTTP_TIMEOUT_MS = 1500;
 
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 
 const int LED_VERDE = D0;
 const int LED_ROJO = D4;
 const int LED_BLANCO = D3;
-const int TRIG = D5;
+const int TRIG = D8;
 const int ECHO = D6;
 const int SERVO_PUERTA = D7;
+
+IPAddress deviceIp(192, 168, 137, 50);
+IPAddress gatewayIp(192, 168, 137, 1);
+IPAddress subnetMask(255, 255, 255, 0);
+IPAddress dnsIp(8, 8, 8, 8);
 
 Servo puerta;
 bool puertaAbierta = false;
 bool ledBlancoEncendido = false;
 bool distanciaDisponible = false;
+bool pisoCalibrado = false;
 bool telemetriaPendiente = true;
 int digitos = 0;
 float ultimaDistanciaCm = 0.0;
+float sumaCalibracionPiso = 0.0;
+float distanciaPisoCm = 0.0;
+uint8_t muestrasCalibracionPiso = 0;
 unsigned long ultimaDeteccion = 0;
 unsigned long ultimoWifiIntento = 0;
 unsigned long ultimaTelemetria = 0;
@@ -46,10 +56,9 @@ String rutaApi(const char* ruta) {
   return String(API_BASE_URL) + ruta;
 }
 
-bool iniciarPeticion(HTTPClient& http, BearSSL::WiFiClientSecure& client, const char* ruta) {
+bool iniciarPeticion(HTTPClient& http, WiFiClient& client, const char* ruta) {
   if (WiFi.status() != WL_CONNECTED) return false;
 
-  client.setFingerprint(SERVER_CERT_FINGERPRINT);
   http.setTimeout(HTTP_TIMEOUT_MS);
   if (!http.begin(client, rutaApi(ruta))) return false;
   http.addHeader("X-Device-Token", DEVICE_API_TOKEN);
@@ -59,7 +68,7 @@ bool iniciarPeticion(HTTPClient& http, BearSSL::WiFiClientSecure& client, const 
 bool reportarTelemetria() {
   if (WiFi.status() != WL_CONNECTED) return false;
 
-  BearSSL::WiFiClientSecure client;
+  WiFiClient client;
   HTTPClient http;
   if (!iniciarPeticion(http, client, "/api/v1/dispositivos/esp8266/telemetria")) {
     return false;
@@ -84,7 +93,7 @@ bool reportarTelemetria() {
 }
 
 bool confirmarOrden(const String& id, bool ejecutada, const String& error) {
-  BearSSL::WiFiClientSecure client;
+  WiFiClient client;
   HTTPClient http;
   String path = "/api/v1/dispositivos/esp8266/ordenes/" + id + "/confirmar";
   if (!iniciarPeticion(http, client, path.c_str())) return false;
@@ -135,7 +144,7 @@ void ejecutarOrden(const String& id, const String& accion) {
 }
 
 void reclamarOrden() {
-  BearSSL::WiFiClientSecure client;
+  WiFiClient client;
   HTTPClient http;
   if (!iniciarPeticion(http, client, "/api/v1/dispositivos/esp8266/ordenes/reclamar")) {
     return;
@@ -229,7 +238,16 @@ void medirDistancia() {
   distanciaDisponible = duracion > 0;
   if (distanciaDisponible) {
     ultimaDistanciaCm = duracion * 0.0343 / 2.0;
-    if (ultimaDistanciaCm < DISTANCE_DETECTION_CM) {
+
+    if (!pisoCalibrado) {
+      sumaCalibracionPiso += ultimaDistanciaCm;
+      muestrasCalibracionPiso++;
+
+      if (muestrasCalibracionPiso >= FLOOR_CALIBRATION_SAMPLES) {
+        distanciaPisoCm = sumaCalibracionPiso / muestrasCalibracionPiso;
+        pisoCalibrado = true;
+      }
+    } else if (fabsf(ultimaDistanciaCm - distanciaPisoCm) >= DISTANCE_CHANGE_DETECTION_CM) {
       ultimaDeteccion = ahora;
       ledBlancoEncendido = true;
       digitalWrite(LED_BLANCO, HIGH);
@@ -251,6 +269,7 @@ void setup() {
   Serial.begin(9600);
   WiFi.mode(WIFI_STA);
   WiFi.setAutoReconnect(true);
+  WiFi.config(deviceIp, gatewayIp, subnetMask, dnsIp);
 
   Wire.begin(D2, D1);
   lcd.init();
@@ -285,7 +304,7 @@ void loop() {
 
   unsigned long ahora = millis();
   if (WiFi.status() == WL_CONNECTED) {
-    if ((telemetriaPendiente && ahora - ultimoIntentoTelemetria >= 1000)
+    if ((telemetriaPendiente && ahora - ultimoIntentoTelemetria >= 200)
         || ahora - ultimaTelemetria >= TELEMETRY_INTERVAL_MS) {
       ultimoIntentoTelemetria = ahora;
       reportarTelemetria();
